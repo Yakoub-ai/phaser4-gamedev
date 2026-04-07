@@ -1,0 +1,10 @@
+{
+  "name": "phaser4-gamedev",
+  "version": "0.1.0",
+  "description": "Comprehensive Phaser 4 game development toolkit — scaffolding, scene creation, game objects, physics, debugging, and v3 migration",
+  "author": {
+    "name": "george"
+  },
+  "license": "MIT",
+  "keywords": ["phaser", "phaser4", "gamedev", "game-development", "webgl", "typescript", "2d-games"]
+}
