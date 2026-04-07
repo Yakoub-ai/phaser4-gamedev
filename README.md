@@ -24,7 +24,7 @@ Inside a Claude Code session, run these two slash commands:
 
 ```
 /plugin marketplace add Yakoub-ai/phaser4-gamedev
-/plugin install phaser4-gamedev@Yakoub-ai
+/plugin install phaser4-gamedev@phaser4-gamedev
 ```
 
 When prompted, choose your preferred scope:
@@ -52,7 +52,7 @@ Add two entries to your settings file directly.
 ```json
 {
   "extraKnownMarketplaces": {
-    "Yakoub-ai": {
+    "phaser4-gamedev": {
       "source": {
         "source": "github",
         "repo": "Yakoub-ai/phaser4-gamedev"
@@ -60,7 +60,7 @@ Add two entries to your settings file directly.
     }
   },
   "enabledPlugins": {
-    "phaser4-gamedev@Yakoub-ai": true
+    "phaser4-gamedev@phaser4-gamedev": true
   }
 }
 ```
@@ -70,7 +70,7 @@ Add two entries to your settings file directly.
 ```json
 {
   "extraKnownMarketplaces": {
-    "Yakoub-ai": {
+    "phaser4-gamedev": {
       "source": {
         "source": "github",
         "repo": "Yakoub-ai/phaser4-gamedev"
@@ -78,7 +78,7 @@ Add two entries to your settings file directly.
     }
   },
   "enabledPlugins": {
-    "phaser4-gamedev@Yakoub-ai": true
+    "phaser4-gamedev@phaser4-gamedev": true
   }
 }
 ```
