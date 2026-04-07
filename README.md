@@ -16,35 +16,88 @@ A Claude Code plugin that makes building [Phaser 4](https://phaser.io) web games
 
 ### Prerequisites
 
-- [Claude Code](https://claude.ai/code) installed
-- A Claude Code account
+- [Claude Code](https://claude.ai/code) CLI installed and authenticated
 
-### Install via `--plugin-dir`
+### Method 1: Interactive (recommended)
 
-```bash
-# Clone the plugin
-git clone https://github.com/Yakoub-ai/phaser4-gamedev.git ~/.claude/plugins/phaser4-gamedev
+Inside a Claude Code session, run these two slash commands:
 
-# Start Claude Code with the plugin loaded
-cc --plugin-dir ~/.claude/plugins/phaser4-gamedev
+```
+/plugin marketplace add Yakoub-ai/phaser4-gamedev
+/plugin install phaser4-gamedev@Yakoub-ai
 ```
 
-Or add it permanently to your Claude Code settings:
+When prompted, choose your preferred scope:
 
-```bash
-# In Claude Code settings.json, add to the plugins section:
-# ~/.claude/settings.json
+| Scope | Settings file | When to use |
+|---|---|---|
+| **User** | `~/.claude/settings.json` | Personal use across all projects |
+| **Project** | `.claude/settings.json` | Share with your team (commit this file) |
+| **Local** | `.claude/settings.local.json` | Personal override in a shared repo |
+
+If Claude Code was already running, reload the plugin:
+
 ```
+/reload-plugins
+```
+
+---
+
+### Method 2: Manual `settings.json` configuration
+
+Add two entries to your settings file directly.
+
+**User scope** (`~/.claude/settings.json`) — active in all your projects:
 
 ```json
 {
-  "plugins": {
-    "dirs": ["~/.claude/plugins/phaser4-gamedev"]
+  "extraKnownMarketplaces": {
+    "Yakoub-ai": {
+      "source": {
+        "source": "github",
+        "repo": "Yakoub-ai/phaser4-gamedev"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "phaser4-gamedev@Yakoub-ai": true
   }
 }
 ```
 
-Then restart Claude Code — the plugin will load automatically every session.
+**Project scope** (`.claude/settings.json` in your game repo) — loads automatically for everyone who opens the project:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "Yakoub-ai": {
+      "source": {
+        "source": "github",
+        "repo": "Yakoub-ai/phaser4-gamedev"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "phaser4-gamedev@Yakoub-ai": true
+  }
+}
+```
+
+Then start (or restart) Claude Code — the plugin loads automatically.
+
+---
+
+### Verify the installation
+
+```
+/plugin list
+```
+
+You should see `phaser4-gamedev` in the list. Test a skill:
+
+```
+/phaser-init
+```
 
 ---
 
