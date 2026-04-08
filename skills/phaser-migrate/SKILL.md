@@ -20,7 +20,7 @@ Verify installed version:
 node -e "const p = require('phaser'); console.log(p.VERSION)"
 ```
 
-Should print `4.0.0-rc.4` (or later RC).
+Should print `4.0.0-rc.7` (or later RC).
 
 ## Step 2 — Scan for Breaking Changes
 

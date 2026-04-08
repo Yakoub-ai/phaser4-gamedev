@@ -6,7 +6,7 @@ version: 0.1.0
 
 # Phaser 4 Project Initialization
 
-Scaffold a new Phaser 4 (v4.0.0-rc.4) project with TypeScript and Vite.
+Scaffold a new Phaser 4 (v4.0.0-rc.7) project with TypeScript and Vite.
 
 ## Quick Scaffold (Recommended)
 
@@ -137,3 +137,21 @@ Working templates in `examples/`:
 ### Reference Files
 
 - **`references/project-templates.md`** — Complete file listings for TypeScript+Vite, JavaScript+Vite, and HTML-only setups
+- **`references/template-archetypes.md`** — Full archetype specs for platformer, top-down RPG, space shooter, and match-3 puzzle games
+
+## Template Archetypes
+
+When the user wants a specific type of game rather than a blank scaffold, generate a complete working game from an archetype. The phaser-coder agent uses the archetype specs to produce all files.
+
+Available archetypes (use with `/phaser-new [template]` or trigger the phaser-coder agent):
+
+| Archetype | Command | Core Features |
+|-----------|---------|--------------|
+| `platformer` | `/phaser-new platformer` | Gravity, jump, platforms, enemies, coins, lives system |
+| `topdown` | `/phaser-new topdown` | Zero gravity, 8-dir movement, tilemap world, NPC dialog |
+| `shooter` | `/phaser-new shooter` | Scrolling BG, bullet pooling, enemy waves, power-ups |
+| `puzzle` | `/phaser-new puzzle` | Match-3 grid, tile swapping, cascade matching, score |
+
+All archetypes generate with placeholder assets (solid-color rectangles/circles via `Graphics.generateTexture()`) so the game runs immediately without real art. Replace with real assets when ready.
+
+**Archetype specifications:** `references/template-archetypes.md`

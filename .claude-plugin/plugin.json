@@ -1,7 +1,9 @@
 {
   "name": "phaser4-gamedev",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Comprehensive Phaser 4 game development toolkit — scaffolding, scene creation, game objects, physics, debugging, and v3 migration",
+  "homepage": "https://github.com/Yakoub-ai/phaser4-gamedev",
+  "repository": "https://github.com/Yakoub-ai/phaser4-gamedev",
   "author": {
     "name": "george"
   },

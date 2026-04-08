@@ -107,8 +107,13 @@ SRC_DIR="$PROJECT_DIR/src"
 if [[ -d "$SRC_DIR" ]]; then
   ok "src/ directory exists"
 
-  if [[ -f "$SRC_DIR/main.ts" ]] || [[ -f "$SRC_DIR/main.js" ]]; then
-    ok "main entry file found"
+  MAIN_FILE=""
+  if [[ -f "$SRC_DIR/main.ts" ]]; then
+    MAIN_FILE="$SRC_DIR/main.ts"
+    ok "main entry file found (main.ts)"
+  elif [[ -f "$SRC_DIR/main.js" ]]; then
+    MAIN_FILE="$SRC_DIR/main.js"
+    ok "main entry file found (main.js)"
   else
     warn "No src/main.ts or src/main.js found"
   fi
@@ -118,6 +123,24 @@ if [[ -d "$SRC_DIR" ]]; then
     ok "$SCENE_COUNT scene file(s) found"
   else
     warn "No files found with 'extends Phaser.Scene'. Is this a new project?"
+  fi
+
+  # ── 4a. Scene registration check ───────────────────────────────────────────
+  if [[ -n "$MAIN_FILE" && "$SCENE_COUNT" -gt 0 ]]; then
+    info "Checking scene registration..."
+    # Extract scene class names from all scene files
+    UNREGISTERED=0
+    while IFS= read -r scene_file; do
+      CLASS_NAME=$(grep -oE "class [A-Za-z]+ extends Phaser\.Scene" "$scene_file" 2>/dev/null | awk '{print $2}' | head -1)
+      if [[ -n "$CLASS_NAME" ]]; then
+        if grep -q "$CLASS_NAME" "$MAIN_FILE" 2>/dev/null; then
+          ok "  Scene '$CLASS_NAME' registered in main file"
+        else
+          warn "  Scene '$CLASS_NAME' found in $scene_file but not referenced in $MAIN_FILE"
+          ((UNREGISTERED++))
+        fi
+      fi
+    done < <(find "$SRC_DIR" \( -name "*.ts" -o -name "*.js" \) 2>/dev/null | xargs grep -l "extends Phaser.Scene" 2>/dev/null)
   fi
 else
   warn "No src/ directory found"
@@ -171,6 +194,15 @@ if [[ -d "$SRC_DIR" ]]; then
     warn "Found $DYN_TEX_COUNT DynamicTexture/RenderTexture creation(s). Ensure .render() is called after drawing."
   fi
 
+  # Check physics debug flag left on
+  DEBUG_COUNT=$(grep -rn "debug: true" "$SRC_DIR" 2>/dev/null | grep -i "arcade\|matter\|physics" | wc -l)
+  if [[ "$DEBUG_COUNT" -gt 0 ]]; then
+    warn "Physics debug: true found in $DEBUG_COUNT place(s) — disable for production builds"
+    grep -rn "debug: true" "$SRC_DIR" 2>/dev/null | grep -i "arcade\|matter\|physics" | head -3
+  else
+    ok "No physics debug mode left enabled"
+  fi
+
   echo ""
 fi
 
@@ -193,6 +225,44 @@ echo ""
 info "Checking public assets..."
 if [[ -d "$PROJECT_DIR/public" ]]; then
   ok "public/ directory exists (Vite will serve these as-is)"
+
+  # ── 7a. Check for large image files (>2MB) ─────────────────────────────────
+  LARGE_IMAGES=$(find "$PROJECT_DIR/public" \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.webp" \) -size +2048k 2>/dev/null)
+  if [[ -n "$LARGE_IMAGES" ]]; then
+    warn "Found image files larger than 2MB (may cause mobile GPU issues):"
+    echo "$LARGE_IMAGES" | while read -r img; do
+      SIZE=$(du -sh "$img" 2>/dev/null | cut -f1)
+      echo "  ${YELLOW}$SIZE${NC} $img"
+    done
+  else
+    ok "No individual image files exceed 2MB"
+  fi
+
+  # ── 7b. Audio fallback check ───────────────────────────────────────────────
+  info "Checking audio fallbacks..."
+  MISSING_FALLBACKS=0
+  while IFS= read -r mp3file; do
+    base="${mp3file%.mp3}"
+    if [[ ! -f "${base}.ogg" ]]; then
+      warn "Missing .ogg fallback for: $mp3file"
+      ((MISSING_FALLBACKS++))
+    fi
+  done < <(find "$PROJECT_DIR/public" -name "*.mp3" 2>/dev/null)
+
+  while IFS= read -r oggfile; do
+    base="${oggfile%.ogg}"
+    if [[ ! -f "${base}.mp3" ]]; then
+      warn "Missing .mp3 fallback for: $oggfile"
+      ((MISSING_FALLBACKS++))
+    fi
+  done < <(find "$PROJECT_DIR/public" -name "*.ogg" 2>/dev/null)
+
+  if [[ "$MISSING_FALLBACKS" -eq 0 ]]; then
+    MP3_COUNT=$(find "$PROJECT_DIR/public" -name "*.mp3" 2>/dev/null | wc -l)
+    if [[ "$MP3_COUNT" -gt 0 ]]; then
+      ok "All audio files have both .mp3 and .ogg versions"
+    fi
+  fi
 else
   warn "No public/ directory. Create public/assets/ and put game assets there"
 fi

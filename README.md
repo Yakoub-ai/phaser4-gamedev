@@ -1,11 +1,14 @@
 # phaser4-gamedev
 
-A Claude Code plugin that makes building [Phaser 4](https://phaser.io) web games fast and easy. It ships **4 specialized agents** and **6 slash-command skills** that encode deep Phaser 4 (v4.0.0-rc.4) knowledge — so you can build any 2D web game without needing to memorize the API.
+A Claude Code plugin that makes building [Phaser 4](https://phaser.io) web games fast and easy. It ships **4 specialized agents**, **14 slash-command skills**, **4 commands**, and **2 hooks** that encode deep Phaser 4 (v4.0.0-rc.7) knowledge — so you can build any 2D web game without needing to memorize the API.
 
 ## Features
 
 - **4 Agents** — specialized subagents for architecture, coding, debugging, and asset management
-- **6 Skills** — slash commands for scaffolding, scenes, game objects, physics, building, and v3 migration
+- **14 Skills** — slash commands covering the full game development lifecycle
+- **4 Commands** — `/phaser-new`, `/phaser-run`, `/phaser-validate`, `/phaser-build`
+- **2 Hooks** — PreToolUse v3 API guard (catches deprecated APIs before code is saved) + SessionStart Phaser project detector
+- **4 Game Archetypes** — platformer, top-down RPG, space shooter, match-3 puzzle — full specs with `/phaser-new`
 - **Phaser 4 Beam renderer knowledge** — the new WebGL renderer, shader system, and performance improvements
 - **All v3→v4 breaking changes encoded** — `Geom.Point`, `Math.PI2`, `Structs`, `DynamicTexture.render()`, removed plugins
 - **TypeScript-first** — all examples and templates use TypeScript with correct tsconfig for Phaser 4
@@ -168,7 +171,9 @@ Guides asset loading, packing, and optimization.
 
 ---
 
-## Skills (Slash Commands)
+## Skills (14 Slash Commands)
+
+### Core Skills
 
 ### `/phaser-init` — Scaffold a New Project
 
@@ -282,12 +287,116 @@ Scans your `src/` directory for every breaking change and applies fixes:
 
 ---
 
+### Game Systems
+
+### `/phaser-audio` — Audio System
+
+```
+"add sound effects" / "play background music" / "set up audio" / "audio not playing on mobile"
+```
+
+Covers Web Audio vs HTML5, loading mp3+ogg pairs, sound pooling, audio sprites, volume management, mute buttons, mobile audio unlock, crossfading between scenes, and cleanup on shutdown.
+
+---
+
+### `/phaser-animation` — Animations and Tweens
+
+```
+"animate a sprite" / "add walk cycle" / "tween a button" / "create particle effects"
+```
+
+Covers spritesheet and atlas-based animations, character state machines, animation chaining and events, tweens (fade, scale, slide, bounce), easing functions, tween timelines, and particle animations.
+
+---
+
+### `/phaser-input` — Input Handling
+
+```
+"add keyboard controls" / "handle mouse clicks" / "add gamepad support" / "detect touch input"
+```
+
+Covers keyboard (cursors, WASD, combos), pointer/mouse (drag-and-drop, input zones), multi-touch (swipe detection), gamepad (analog sticks with dead zones), and virtual joystick patterns.
+
+---
+
+### `/phaser-tilemap` — Tilemaps
+
+```
+"add a tilemap" / "set up Tiled" / "tile collision" / "parallax layers"
+```
+
+Full Tiled Editor workflow — creating maps, tilesets, collision properties, layer naming conventions, object layers (spawn points, triggers), camera/world bounds, dynamic tile manipulation, and parallax.
+
+---
+
+### `/phaser-ui` — User Interface
+
+```
+"add a health bar" / "create buttons" / "build a dialog box" / "add a minimap"
+```
+
+Covers health bars (Graphics-based), score/text displays, interactive buttons, dialog boxes (Container-based), minimap, progress bars, BitmapText for performance, DOM overlay, responsive scaling, and HUD-as-parallel-scene pattern.
+
+---
+
+### Advanced Features
+
+### `/phaser-matter` — Matter.js Physics
+
+```
+"use Matter physics" / "polygon collision" / "add constraints" / "create sensors"
+```
+
+Covers Arcade vs Matter decision guide, body types (rectangle, circle, polygon, compound, static), forces, collision filtering with categories/bitmasks, sensors/trigger zones, constraints (distance, spring, pin/hinge), and debug rendering.
+
+---
+
+### `/phaser-saveload` — Save and Load
+
+```
+"save the game" / "load game state" / "add auto-save" / "multiple save slots"
+```
+
+Covers what to save vs reconstruct, localStorage patterns, typed SaveData with defaults, SaveManager class, multi-slot saves, auto-save (event + periodic), Registry integration, settings storage, hi-score tables, save data versioning, and cloud save architecture.
+
+---
+
+### `/phaser-mobile` — Mobile Deployment
+
+```
+"deploy to mobile" / "responsive scaling" / "touch controls" / "make a PWA"
+```
+
+Covers Scale Manager modes (FIT/ENVELOP/RESIZE), touch controls and responsive layout, preventing browser gestures, mobile audio unlock, device detection, performance guidelines, Capacitor deployment (iOS/Android), and PWA setup (manifest, service worker).
+
+---
+
+## Commands
+
+| Command | Description |
+|---|---|
+| `/phaser-new [template]` | Scaffold a new game — optionally from an archetype (`platformer`, `topdown`, `shooter`, `puzzle`) |
+| `/phaser-run` | Start the dev server |
+| `/phaser-validate` | Run the project health check |
+| `/phaser-build` | Production build and deployment prep |
+
+---
+
+## Hooks
+
+| Hook | Event | Purpose |
+|---|---|---|
+| **v3 API Guard** | PreToolUse (Write/Edit) | Catches deprecated Phaser 3 APIs (`Geom.Point`, `Math.PI2`, `Structs.Map`, etc.) before code is saved |
+| **Project Detector** | SessionStart | Detects Phaser projects, shows available agents/commands/skills |
+
+---
+
 ## Phaser 4 Key Facts
 
 | Topic | Value |
 |---|---|
 | Install | `npm install phaser@beta` |
-| Latest version | v4.0.0-rc.4 |
+| Latest version | v4.0.0-rc.7 |
 | Scaffold | `npm create @phaserjs/game@latest` |
 | Renderer | "Phaser Beam" (new WebGL, up to 16x faster filters on mobile) |
 | TypeScript types | `typeRoots: ["./node_modules/phaser/types"]`, `types: ["Phaser"]` |
@@ -316,19 +425,38 @@ bash skills/phaser-build/scripts/validate-project.sh /path/to/your/game
 ```
 phaser4-gamedev/
 ├── .claude-plugin/
-│   └── plugin.json
+│   ├── plugin.json
+│   └── marketplace.json
 ├── agents/
-│   ├── phaser-architect.md
-│   ├── phaser-coder.md
-│   ├── phaser-debugger.md
-│   └── phaser-asset-advisor.md
+│   ├── phaser-architect.md      (opus)
+│   ├── phaser-coder.md          (sonnet)
+│   ├── phaser-debugger.md       (opus)
+│   └── phaser-asset-advisor.md  (sonnet)
+├── commands/
+│   ├── phaser-new.md
+│   ├── phaser-run.md
+│   ├── phaser-validate.md
+│   └── phaser-build.md
+├── hooks/
+│   ├── hooks.json
+│   └── scripts/
+│       ├── check-v3-api.sh
+│       └── detect-phaser.sh
 ├── skills/
-│   ├── phaser-init/       SKILL.md + references/ + examples/
-│   ├── phaser-scene/      SKILL.md + references/
-│   ├── phaser-gameobj/    SKILL.md + references/
-│   ├── phaser-physics/    SKILL.md + references/
-│   ├── phaser-build/      SKILL.md + scripts/
-│   └── phaser-migrate/    SKILL.md + references/
+│   ├── phaser-init/         scaffolding + 4 game archetypes
+│   ├── phaser-scene/        scene creation and transitions
+│   ├── phaser-gameobj/      sprites, text, particles, containers
+│   ├── phaser-physics/      Arcade Physics + multiplayer patterns
+│   ├── phaser-build/        build, deploy, validate + testing patterns
+│   ├── phaser-migrate/      v3 → v4 migration
+│   ├── phaser-audio/        Web Audio, audio sprites, mobile unlock
+│   ├── phaser-animation/    spritesheets, tweens, state machines
+│   ├── phaser-input/        keyboard, mouse, touch, gamepad
+│   ├── phaser-tilemap/      Tiled workflow, layers, collision
+│   ├── phaser-ui/           health bars, buttons, dialogs, HUD
+│   ├── phaser-matter/       Matter.js physics, constraints, sensors
+│   ├── phaser-saveload/     save/load, auto-save, versioning
+│   └── phaser-mobile/       Scale Manager, Capacitor, PWA
 └── scripts/
     └── validate-plugin.sh
 ```

@@ -72,9 +72,54 @@ for agent in "${REQUIRED_AGENTS[@]}"; do
 done
 echo ""
 
+# ── Commands ──────────────────────────────────────────────────────────────────
+info "Commands..."
+REQUIRED_COMMANDS=("phaser-new.md" "phaser-run.md" "phaser-validate.md" "phaser-build.md")
+if [[ -d "$PLUGIN_DIR/commands" ]]; then
+  for cmd in "${REQUIRED_COMMANDS[@]}"; do
+    if [[ -f "$PLUGIN_DIR/commands/$cmd" ]]; then
+      ok "commands/$cmd"
+    else
+      error "commands/$cmd missing"
+    fi
+  done
+else
+  error "commands/ directory missing"
+fi
+echo ""
+
+# ── Hooks ─────────────────────────────────────────────────────────────────────
+info "Hooks..."
+if [[ -f "$PLUGIN_DIR/hooks/hooks.json" ]]; then
+  ok "hooks/hooks.json exists"
+  if grep -q "PreToolUse" "$PLUGIN_DIR/hooks/hooks.json"; then
+    ok "  PreToolUse hook configured"
+  else
+    warn "  No PreToolUse hook found in hooks.json"
+  fi
+  if grep -q "SessionStart" "$PLUGIN_DIR/hooks/hooks.json"; then
+    ok "  SessionStart hook configured"
+  else
+    warn "  No SessionStart hook found in hooks.json"
+  fi
+else
+  error "hooks/hooks.json missing"
+fi
+if [[ -f "$PLUGIN_DIR/hooks/scripts/check-v3-api.sh" ]]; then
+  ok "hooks/scripts/check-v3-api.sh exists"
+else
+  error "hooks/scripts/check-v3-api.sh missing"
+fi
+if [[ -f "$PLUGIN_DIR/hooks/scripts/detect-phaser.sh" ]]; then
+  ok "hooks/scripts/detect-phaser.sh exists"
+else
+  error "hooks/scripts/detect-phaser.sh missing"
+fi
+echo ""
+
 # ── Skills ────────────────────────────────────────────────────────────────────
 info "Skills..."
-REQUIRED_SKILLS=("phaser-init" "phaser-scene" "phaser-gameobj" "phaser-physics" "phaser-build" "phaser-migrate")
+REQUIRED_SKILLS=("phaser-init" "phaser-scene" "phaser-gameobj" "phaser-physics" "phaser-build" "phaser-migrate" "phaser-audio" "phaser-animation" "phaser-input" "phaser-tilemap" "phaser-ui" "phaser-matter" "phaser-saveload" "phaser-mobile")
 for skill in "${REQUIRED_SKILLS[@]}"; do
   SKILL_DIR="$PLUGIN_DIR/skills/$skill"
   if [[ -d "$SKILL_DIR" ]]; then
@@ -181,7 +226,8 @@ echo ""
 # ── Summary ───────────────────────────────────────────────────────────────────
 echo "=================================="
 echo "Agents: 4 required"
-echo "Skills: 6 required"
+echo "Skills: 14 required (6 original + 8 new)"
+echo "Commands: 4 required"
 echo ""
 if [[ "$ERRORS" -eq 0 && "$WARNINGS" -eq 0 ]]; then
   echo -e "${GREEN}Plugin validation passed! All checks OK.${NC}"
