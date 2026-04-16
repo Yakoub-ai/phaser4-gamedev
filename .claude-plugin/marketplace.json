@@ -4,15 +4,15 @@
     "name": "Yakoub-ai"
   },
   "metadata": {
-    "description": "Phaser 4 game development toolkit for Claude Code — scaffolding, scenes, physics, migration, and debugging",
-    "version": "0.1.0"
+    "description": "Phaser 4 game development toolkit for Claude Code — scaffolding, scenes, physics, migration, debugging, GDD generation, project analysis, and 9 game archetypes",
+    "version": "0.3.0"
   },
   "plugins": [
     {
       "name": "phaser4-gamedev",
       "source": "./",
-      "description": "Comprehensive Phaser 4 game development toolkit — scaffolding, scene creation, game objects, physics, debugging, and v3 migration",
-      "version": "0.1.0",
+      "description": "Comprehensive Phaser 4 game development toolkit — scaffolding, scene creation, game objects, physics, debugging, v3 migration, GDD generation, project analysis, and 9 game archetypes",
+      "version": "0.3.0",
       "category": "gamedev",
       "tags": ["phaser", "phaser4", "gamedev", "game-development", "webgl", "typescript", "2d-games"]
     }

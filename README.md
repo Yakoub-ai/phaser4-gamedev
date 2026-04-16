@@ -1,14 +1,18 @@
 # phaser4-gamedev
 
-A Claude Code plugin that makes building [Phaser 4](https://phaser.io) web games fast and easy. It ships **4 specialized agents**, **14 slash-command skills**, **4 commands**, and **2 hooks** that encode deep Phaser 4 (v4.0.0-rc.7) knowledge — so you can build any 2D web game without needing to memorize the API.
+A Claude Code plugin that makes building [Phaser 4](https://phaser.io) web games fast and easy. It ships **4 specialized agents**, **16 slash-command skills**, **6 commands**, and **2 hooks** that encode deep Phaser 4 (v4.0.0-rc.7) knowledge — so you can build any 2D web game without needing to memorize the API.
 
 ## Features
 
 - **4 Agents** — specialized subagents for architecture, coding, debugging, and asset management
-- **14 Skills** — slash commands covering the full game development lifecycle
-- **4 Commands** — `/phaser-new`, `/phaser-run`, `/phaser-validate`, `/phaser-build`
+- **16 Skills** — slash commands covering the full game development lifecycle
+- **6 Commands** — `/phaser-new`, `/phaser-run`, `/phaser-validate`, `/phaser-build`, `/phaser-gdd`, `/phaser-analyze`
 - **2 Hooks** — PreToolUse v3 API guard (catches deprecated APIs before code is saved) + SessionStart Phaser project detector
-- **4 Game Archetypes** — platformer, top-down RPG, space shooter, match-3 puzzle — full specs with `/phaser-new`
+- **9 Game Archetypes** — platformer, top-down RPG, space shooter, match-3 puzzle, tower defense, endless runner, card game, fighting game, racing — full specs with `/phaser-new`
+- **Game Design Documents** — generate comprehensive 12-section GDDs with `/phaser-gdd`
+- **Project Analysis** — analyze existing projects for architecture, performance, and code quality with `/phaser-analyze`
+- **Device Profiles** — platform-specific optimization guides for iOS, Android, desktop, Capacitor, and PWA
+- **Asset Sourcing** — guides for finding free assets, creation tools, and placeholder-to-production workflows
 - **Phaser 4 Beam renderer knowledge** — the new WebGL renderer, shader system, and performance improvements
 - **All v3→v4 breaking changes encoded** — `Geom.Point`, `Math.PI2`, `Structs`, `DynamicTexture.render()`, removed plugins
 - **TypeScript-first** — all examples and templates use TypeScript with correct tsconfig for Phaser 4
@@ -20,6 +24,10 @@ A Claude Code plugin that makes building [Phaser 4](https://phaser.io) web games
 ### Prerequisites
 
 - [Claude Code](https://claude.ai/code) CLI installed and authenticated
+
+### Optional: Context7 MCP Server
+
+The plugin's agents reference [Context7](https://github.com/upstash/context7) for live Phaser 4 API verification. While agents work without it (they have extensive built-in Phaser 4 knowledge), installing Context7 enables real-time API lookups for edge cases during the RC phase.
 
 ### Method 1: Interactive (recommended)
 
@@ -171,7 +179,7 @@ Guides asset loading, packing, and optimization.
 
 ---
 
-## Skills (14 Slash Commands)
+## Skills (16 Slash Commands)
 
 ### Core Skills
 
@@ -367,7 +375,27 @@ Covers what to save vs reconstruct, localStorage patterns, typed SaveData with d
 "deploy to mobile" / "responsive scaling" / "touch controls" / "make a PWA"
 ```
 
-Covers Scale Manager modes (FIT/ENVELOP/RESIZE), touch controls and responsive layout, preventing browser gestures, mobile audio unlock, device detection, performance guidelines, Capacitor deployment (iOS/Android), and PWA setup (manifest, service worker).
+Covers Scale Manager modes (FIT/ENVELOP/RESIZE), touch controls and responsive layout, preventing browser gestures, mobile audio unlock, device detection, performance guidelines, Capacitor deployment (iOS/Android), and PWA setup (manifest, service worker). Includes device-specific profiles for iOS Safari, Android Chrome, desktop, Capacitor, and PWA.
+
+---
+
+### `/phaser-gdd` — Game Design Document
+
+```
+"write a game design document" / "create a GDD" / "design my game" / "plan game progression"
+```
+
+Generates a comprehensive 12-section Game Design Document: game overview, core loop, mechanics deep dive, progression system, level/world design, characters & entities, UI/UX wireframes, art direction, audio design plan, technical requirements, platform targets, and monetization/release plan. Includes example GDD templates for platformer, puzzle, and RPG genres.
+
+---
+
+### `/phaser-analyze` — Project Analysis
+
+```
+"analyze my game" / "review my Phaser project" / "audit project health" / "find bottlenecks"
+```
+
+5-phase analysis for existing Phaser projects: discovery (file/scene/LOC counts), architecture assessment (A-F grade), performance audit (pooling, particles, static groups), API correctness (v3 scan, TypeScript strictness), and best practice check (lifecycle, cleanup, debug flags). Produces a structured report with improvement roadmap and quick wins. Includes automated `analyze-project.sh` script.
 
 ---
 
@@ -375,10 +403,12 @@ Covers Scale Manager modes (FIT/ENVELOP/RESIZE), touch controls and responsive l
 
 | Command | Description |
 |---|---|
-| `/phaser-new [template]` | Scaffold a new game — optionally from an archetype (`platformer`, `topdown`, `shooter`, `puzzle`) |
+| `/phaser-new [template]` | Scaffold a new game — optionally from an archetype (`platformer`, `topdown`, `shooter`, `puzzle`, `towerdefense`, `runner`, `cardgame`, `fighting`, `racing`) |
 | `/phaser-run` | Start the dev server |
-| `/phaser-validate` | Run the project health check |
+| `/phaser-validate` | Run the project health check (structure, runtime, smoke tests, deploy checklist) |
 | `/phaser-build` | Production build and deployment prep |
+| `/phaser-gdd [genre]` | Generate a comprehensive 12-section Game Design Document |
+| `/phaser-analyze` | Analyze an existing project for architecture, performance, and code quality |
 
 ---
 
@@ -436,14 +466,16 @@ phaser4-gamedev/
 │   ├── phaser-new.md
 │   ├── phaser-run.md
 │   ├── phaser-validate.md
-│   └── phaser-build.md
+│   ├── phaser-build.md
+│   ├── phaser-gdd.md
+│   └── phaser-analyze.md
 ├── hooks/
 │   ├── hooks.json
 │   └── scripts/
 │       ├── check-v3-api.sh
 │       └── detect-phaser.sh
 ├── skills/
-│   ├── phaser-init/         scaffolding + 4 game archetypes
+│   ├── phaser-init/         scaffolding + 9 game archetypes
 │   ├── phaser-scene/        scene creation and transitions
 │   ├── phaser-gameobj/      sprites, text, particles, containers
 │   ├── phaser-physics/      Arcade Physics + multiplayer patterns
@@ -456,7 +488,9 @@ phaser4-gamedev/
 │   ├── phaser-ui/           health bars, buttons, dialogs, HUD
 │   ├── phaser-matter/       Matter.js physics, constraints, sensors
 │   ├── phaser-saveload/     save/load, auto-save, versioning
-│   └── phaser-mobile/       Scale Manager, Capacitor, PWA
+│   ├── phaser-mobile/       Scale Manager, Capacitor, PWA, device profiles
+│   ├── phaser-gdd/          Game Design Document generation
+│   └── phaser-analyze/      brownfield project analysis + automated script
 └── scripts/
     └── validate-plugin.sh
 ```

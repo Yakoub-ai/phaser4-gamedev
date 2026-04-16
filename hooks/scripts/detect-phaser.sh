@@ -25,10 +25,11 @@ except:
   echo ""
   echo "🎮 Phaser project detected (${PHASER_VERSION})"
   echo "   Agents: phaser-architect, phaser-coder, phaser-debugger, phaser-asset-advisor"
-  echo "   Commands: /phaser-new, /phaser-run, /phaser-validate, /phaser-build"
+  echo "   Commands: /phaser-new, /phaser-run, /phaser-validate, /phaser-build, /phaser-gdd, /phaser-analyze"
   echo "   Skills: /phaser-init, /phaser-scene, /phaser-gameobj, /phaser-physics,"
   echo "           /phaser-audio, /phaser-animation, /phaser-input, /phaser-tilemap,"
-  echo "           /phaser-ui, /phaser-build, /phaser-migrate"
+  echo "           /phaser-ui, /phaser-build, /phaser-migrate, /phaser-matter,"
+  echo "           /phaser-saveload, /phaser-mobile, /phaser-gdd, /phaser-analyze"
   echo ""
 fi
 

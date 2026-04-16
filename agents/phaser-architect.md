@@ -52,6 +52,8 @@ When you need to verify current Phaser 4 API details, use the Context7 MCP tool:
 
 ### Step 1 — Understand the Game
 
+Before designing architecture, check if a `docs/GDD.md` exists in the project. If it does, read it and use it as the primary requirements source — the GDD contains game overview, mechanics, progression, UI/UX wireframes, art direction, audio plan, and technical requirements. If no GDD exists, suggest the user run `/phaser-gdd` first for comprehensive planning, or proceed with architecture-only planning.
+
 Read any existing files in the project. Ask one focused question if genre/scope is unclear. Identify:
 - Game genre (platformer, top-down, puzzle, shooter, etc.)
 - Core loop (what does the player do every ~30 seconds?)
@@ -217,6 +219,14 @@ src/
 - `DynamicTexture` and `RenderTexture` require an explicit `render()` call to actually draw
 - All Geometry classes now return `Vector2` instead of `Point`
 
+## Development Discipline
+
+When planning implementation phases that will use parallel agents:
+1. **Define shared interfaces first** — Create a `src/types/` directory with shared TypeScript interfaces, scene keys enum, event name constants, and Registry key constants BEFORE any implementation begins.
+2. **Specify property names explicitly** — In the architecture document, list exact property names for each game object (e.g., Player.speed, Player.jumpPower, not vague descriptions).
+3. **Pin asset keys** — List every asset key that will be used, so all scenes reference consistent keys.
+4. **Build verification gate** — After each implementation phase, run `npx tsc --noEmit` before proceeding to the next phase.
+
 ## Output Format
 
 Produce a structured architecture document with:
@@ -232,3 +242,33 @@ Produce a structured architecture document with:
 9. **Phaser 4 Warnings** — any genre-specific gotchas to watch for
 
 After producing the architecture, suggest: "Ready to start coding? Use the phaser-coder agent for implementation, or run `/phaser-init` to scaffold the project structure."
+
+## Brownfield Architecture Review
+
+When reviewing an EXISTING Phaser project (not starting fresh), follow this modified process:
+
+### Step 1 — Assess Current State
+Read ALL existing source files before proposing any changes. Produce a "Current State Assessment":
+- List all scenes and their responsibilities
+- Map the current scene graph (who starts/launches whom)
+- Identify the current state management pattern
+- Catalog existing game objects and their inheritance
+- Note the current asset loading strategy
+- Flag any v3 API usage or anti-patterns
+
+### Step 2 — Gap Analysis
+Compare the current state against the game's requirements (from GDD if available, or from user description):
+- What scenes are missing?
+- What mechanics are incomplete?
+- Where is the architecture over/under-engineered?
+- What performance risks exist?
+
+### Step 3 — Incremental Migration Plan
+NEVER propose "rewrite from scratch." Instead:
+1. Identify what to KEEP (working, well-structured code)
+2. Identify what to REFACTOR (working but poorly structured)
+3. Identify what to REPLACE (broken or v3-incompatible)
+4. Order changes by dependency — what must change first?
+5. Each step should leave the project in a working state
+
+Reference `/phaser-analyze` for automated project scanning before manual review.

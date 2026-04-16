@@ -269,6 +269,124 @@ fi
 
 echo ""
 
+# ── 8. Console.log / debug artifacts ─────────────────────────────────────────
+if [[ -d "$SRC_DIR" ]]; then
+  info "Checking for debug artifacts..."
+
+  # Count console.log/warn/error calls (excluding comments)
+  CONSOLE_LOG_COUNT=$(grep -rn "console\.\(log\|warn\|error\)" "$SRC_DIR" --include="*.ts" --include="*.js" 2>/dev/null | grep -v "^\s*//" | grep -v "import\.meta\.env\.DEV" | wc -l)
+  if [[ "$CONSOLE_LOG_COUNT" -gt 5 ]]; then
+    warn "Found $CONSOLE_LOG_COUNT console.log/warn/error calls. Gate behind import.meta.env.DEV for production:"
+    echo "       if (import.meta.env.DEV) console.log(...);"
+    grep -rn "console\.\(log\|warn\|error\)" "$SRC_DIR" --include="*.ts" --include="*.js" 2>/dev/null | grep -v "^\s*//" | grep -v "import\.meta\.env\.DEV" | head -5
+  elif [[ "$CONSOLE_LOG_COUNT" -gt 0 ]]; then
+    ok "Only $CONSOLE_LOG_COUNT console statement(s) found (acceptable)"
+  else
+    ok "No console.log/warn/error statements found"
+  fi
+
+  echo ""
+fi
+
+# ── 9. Event listener cleanup ────────────────────────────────────────────────
+if [[ -d "$SRC_DIR" ]]; then
+  info "Checking event listener cleanup..."
+
+  LISTENER_ISSUES=0
+  while IFS= read -r scene_file; do
+    CLASS_NAME=$(grep -oE "class [A-Za-z]+ extends Phaser\.Scene" "$scene_file" 2>/dev/null | awk '{print $2}' | head -1)
+    if [[ -z "$CLASS_NAME" ]]; then
+      continue
+    fi
+
+    # Check if this scene adds event listeners
+    HAS_LISTENERS=$(grep -c "events\.on\|events\.addListener\|this\.input\.on" "$scene_file" 2>/dev/null || true)
+    if [[ "$HAS_LISTENERS" -gt 0 ]]; then
+      # Check if it also cleans them up
+      HAS_CLEANUP=$(grep -c "events\.off\|events\.removeListener\|SHUTDOWN\|shutdown" "$scene_file" 2>/dev/null || true)
+      if [[ "$HAS_CLEANUP" -eq 0 ]]; then
+        warn "Scene '$CLASS_NAME' has $HAS_LISTENERS event listener(s) but no cleanup (events.off / SHUTDOWN handler)"
+        ((LISTENER_ISSUES++))
+      else
+        ok "  Scene '$CLASS_NAME' has listeners with cleanup"
+      fi
+    fi
+  done < <(find "$SRC_DIR" \( -name "*.ts" -o -name "*.js" \) 2>/dev/null | xargs grep -l "extends Phaser.Scene" 2>/dev/null)
+
+  if [[ "$LISTENER_ISSUES" -eq 0 ]]; then
+    ok "All scenes with listeners have proper cleanup"
+  fi
+
+  echo ""
+fi
+
+# ── 10. Asset key consistency ─────────────────────────────────────────────────
+if [[ -d "$SRC_DIR" ]]; then
+  info "Checking asset key consistency..."
+
+  # Extract all this.load.* keys from preload methods (first string argument)
+  LOADED_KEYS=$(grep -rhoE "this\.load\.(image|spritesheet|atlas|audio|bitmapFont|json|tilemapTiledJSON|svg|video|text|xml|html)\(['\"]([^'\"]+)['\"]" "$SRC_DIR" --include="*.ts" --include="*.js" 2>/dev/null | grep -oE "\(['\"][^'\"]+['\"]" | tr -d "()'\"" | sort -u)
+
+  # Extract asset key references from create/update (this.add.image, this.add.sprite, this.sound.add, this.make, textures.get, etc.)
+  USED_KEYS=$(grep -rhoE "(this\.(add\.(image|sprite|tileSprite|existing)|sound\.(add|play)|make\.|textures\.get|anims\.create|physics\.add\.(image|sprite|existing))|\.play\(|\.setTexture\(|\.setFrame\()\s*\(?['\"]([^'\"]+)['\"]" "$SRC_DIR" --include="*.ts" --include="*.js" 2>/dev/null | grep -oE "['\"][^'\"]+['\"]" | tr -d "'\"" | sort -u)
+
+  if [[ -n "$LOADED_KEYS" && -n "$USED_KEYS" ]]; then
+    # Keys used but never loaded
+    MISSING_LOAD=0
+    while IFS= read -r key; do
+      if [[ -n "$key" ]] && ! echo "$LOADED_KEYS" | grep -qxF "$key"; then
+        warn "Asset key '$key' is used but never loaded (potential 404 at runtime)"
+        ((MISSING_LOAD++))
+      fi
+    done <<< "$USED_KEYS"
+
+    # Keys loaded but never used
+    UNUSED_LOAD=0
+    while IFS= read -r key; do
+      if [[ -n "$key" ]] && ! echo "$USED_KEYS" | grep -qxF "$key"; then
+        warn "Asset key '$key' is loaded but never used (wasted bandwidth)"
+        ((UNUSED_LOAD++))
+      fi
+    done <<< "$LOADED_KEYS"
+
+    if [[ "$MISSING_LOAD" -eq 0 && "$UNUSED_LOAD" -eq 0 ]]; then
+      ok "All loaded asset keys are used, all used keys are loaded"
+    fi
+  else
+    info "Could not extract enough asset keys for consistency check"
+  fi
+
+  echo ""
+fi
+
+# ── 11. TypeScript strict check ──────────────────────────────────────────────
+if [[ -d "$SRC_DIR" ]]; then
+  info "Checking TypeScript strictness..."
+
+  # Count 'as any' casts
+  AS_ANY_COUNT=$(grep -rn "as any" "$SRC_DIR" --include="*.ts" 2>/dev/null | wc -l)
+  # Count @ts-ignore and @ts-expect-error comments
+  TS_IGNORE_COUNT=$(grep -rn "@ts-ignore\|@ts-expect-error" "$SRC_DIR" --include="*.ts" 2>/dev/null | wc -l)
+
+  TOTAL_STRICT_ISSUES=$((AS_ANY_COUNT + TS_IGNORE_COUNT))
+
+  if [[ "$TOTAL_STRICT_ISSUES" -gt 5 ]]; then
+    warn "Found $AS_ANY_COUNT 'as any' cast(s) and $TS_IGNORE_COUNT @ts-ignore/@ts-expect-error comment(s). Consider adding proper types"
+    if [[ "$AS_ANY_COUNT" -gt 0 ]]; then
+      grep -rn "as any" "$SRC_DIR" --include="*.ts" 2>/dev/null | head -3
+    fi
+    if [[ "$TS_IGNORE_COUNT" -gt 0 ]]; then
+      grep -rn "@ts-ignore\|@ts-expect-error" "$SRC_DIR" --include="*.ts" 2>/dev/null | head -3
+    fi
+  elif [[ "$TOTAL_STRICT_ISSUES" -gt 0 ]]; then
+    ok "Only $TOTAL_STRICT_ISSUES type escape(s) found ($AS_ANY_COUNT 'as any', $TS_IGNORE_COUNT @ts-ignore) — acceptable"
+  else
+    ok "No 'as any' casts or @ts-ignore comments found"
+  fi
+
+  echo ""
+fi
+
 # ── Summary ───────────────────────────────────────────────────────────────────
 echo "=================================="
 if [[ "$ERRORS" -eq 0 && "$WARNINGS" -eq 0 ]]; then
