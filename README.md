@@ -179,7 +179,7 @@ Guides asset loading, packing, and optimization.
 
 ---
 
-## Skills (14 Slash Commands)
+## Skills (16 Slash Commands)
 
 ### Core Skills
 

@@ -5,7 +5,7 @@ argument-hint: [template] — platformer, topdown, shooter, puzzle, towerdefense
 
 Create a new Phaser 4 game project. The optional argument specifies the game template archetype.
 
-If an argument was provided ($ARGUMENTS), treat it as the desired game template type (platformer, topdown, shooter, puzzle, or blank). If no argument was provided, ask the user which template they want before proceeding.
+If an argument was provided ($ARGUMENTS), treat it as the desired game template type (platformer, topdown, shooter, puzzle, towerdefense, runner, cardgame, fighting, racing, or blank). If no argument was provided, ask the user which template they want before proceeding.
 
 ## Process
 
@@ -22,7 +22,7 @@ If an argument was provided ($ARGUMENTS), treat it as the desired game template 
    ```
    Then follow the setup steps from the phaser-init skill.
 
-   **For `platformer`, `topdown`, `shooter`, or `puzzle`:**
+   **For `platformer`, `topdown`, `shooter`, `puzzle`, `towerdefense`, `runner`, `cardgame`, `fighting`, or `racing`:**
    - First run `npm create @phaserjs/game@latest` to scaffold the base project (TypeScript+Vite).
    - Then use the phaser-coder agent to generate all game-specific files according to the archetype in `skills/phaser-init/references/template-archetypes.md`.
    - Generate placeholder assets using `Phaser.GameObjects.Graphics` + `generateTexture()` so the game works immediately without real art.
