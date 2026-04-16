@@ -1,6 +1,6 @@
 ---
 description: Scaffold a new Phaser 4 game project
-argument-hint: [template] — platformer, topdown, shooter, puzzle, or blank (default)
+argument-hint: [template] — platformer, topdown, shooter, puzzle, towerdefense, runner, cardgame, fighting, racing, or blank (default)
 ---
 
 Create a new Phaser 4 game project. The optional argument specifies the game template archetype.
@@ -41,3 +41,8 @@ If an argument was provided ($ARGUMENTS), treat it as the desired game template 
 | `topdown` | Top-down RPG with tilemap world, 8-dir movement, NPC interaction |
 | `shooter` | Space shooter with scrolling background, bullet pooling, enemy waves |
 | `puzzle` | Match-3 grid puzzle with tile swapping, matching, cascade logic |
+| `towerdefense` | Grid-based tower defense with enemy waves, tower types, economy system |
+| `runner` | Endless runner with auto-scrolling, jump/slide mechanics, increasing difficulty |
+| `cardgame` | Card-based memory match game with flip animations, scoring |
+| `fighting` | 2-player local fighting game with state machine fighters, round system |
+| `racing` | Top-down racing with rotation steering, checkpoints, AI opponents |

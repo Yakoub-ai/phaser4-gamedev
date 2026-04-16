@@ -151,6 +151,11 @@ Available archetypes (use with `/phaser-new [template]` or trigger the phaser-co
 | `topdown` | `/phaser-new topdown` | Zero gravity, 8-dir movement, tilemap world, NPC dialog |
 | `shooter` | `/phaser-new shooter` | Scrolling BG, bullet pooling, enemy waves, power-ups |
 | `puzzle` | `/phaser-new puzzle` | Match-3 grid, tile swapping, cascade matching, score |
+| `towerdefense` | `/phaser-new towerdefense` | Grid-based tower placement, enemy waves, economy, projectile pooling |
+| `runner` | `/phaser-new runner` | Auto-scrolling, jump/slide, procedural obstacles, parallax, increasing speed |
+| `cardgame` | `/phaser-new cardgame` | Memory match cards, flip animations, pair matching, move scoring |
+| `fighting` | `/phaser-new fighting` | State machine fighters, 2-player local, hitbox system, round-based |
+| `racing` | `/phaser-new racing` | Top-down rotation steering, tilemap track, checkpoints, AI opponents |
 
 All archetypes generate with placeholder assets (solid-color rectangles/circles via `Graphics.generateTexture()`) so the game runs immediately without real art. Replace with real assets when ready.
 

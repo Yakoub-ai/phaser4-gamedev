@@ -74,7 +74,7 @@ echo ""
 
 # ── Commands ──────────────────────────────────────────────────────────────────
 info "Commands..."
-REQUIRED_COMMANDS=("phaser-new.md" "phaser-run.md" "phaser-validate.md" "phaser-build.md")
+REQUIRED_COMMANDS=("phaser-new.md" "phaser-run.md" "phaser-validate.md" "phaser-build.md" "phaser-gdd.md" "phaser-analyze.md")
 if [[ -d "$PLUGIN_DIR/commands" ]]; then
   for cmd in "${REQUIRED_COMMANDS[@]}"; do
     if [[ -f "$PLUGIN_DIR/commands/$cmd" ]]; then
@@ -119,7 +119,7 @@ echo ""
 
 # ── Skills ────────────────────────────────────────────────────────────────────
 info "Skills..."
-REQUIRED_SKILLS=("phaser-init" "phaser-scene" "phaser-gameobj" "phaser-physics" "phaser-build" "phaser-migrate" "phaser-audio" "phaser-animation" "phaser-input" "phaser-tilemap" "phaser-ui" "phaser-matter" "phaser-saveload" "phaser-mobile")
+REQUIRED_SKILLS=("phaser-init" "phaser-scene" "phaser-gameobj" "phaser-physics" "phaser-build" "phaser-migrate" "phaser-audio" "phaser-animation" "phaser-input" "phaser-tilemap" "phaser-ui" "phaser-matter" "phaser-saveload" "phaser-mobile" "phaser-gdd" "phaser-analyze")
 for skill in "${REQUIRED_SKILLS[@]}"; do
   SKILL_DIR="$PLUGIN_DIR/skills/$skill"
   if [[ -d "$SKILL_DIR" ]]; then
@@ -226,8 +226,8 @@ echo ""
 # ── Summary ───────────────────────────────────────────────────────────────────
 echo "=================================="
 echo "Agents: 4 required"
-echo "Skills: 14 required (6 original + 8 new)"
-echo "Commands: 4 required"
+echo "Skills: 16 required"
+echo "Commands: 6 required"
 echo ""
 if [[ "$ERRORS" -eq 0 && "$WARNINGS" -eq 0 ]]; then
   echo -e "${GREEN}Plugin validation passed! All checks OK.${NC}"
