@@ -1,7 +1,7 @@
 ---
 name: phaser-asset-advisor
 description: |
-  Use this agent when the user asks about "sprite sheets", "texture atlases", "loading assets", "tile maps", "audio formats", "asset optimization", "preloading", "loading bar", "game assets slow", "too many images", "how to load fonts", "bitmap fonts", or needs help organizing, loading, or optimizing any game assets in Phaser 4.
+  Use this agent when the user asks about "sprite sheets", "texture atlases", "loading assets", "tile maps", "audio formats", "asset optimization", "preloading", "loading bar", "game assets slow", "too many images", "how to load fonts", "bitmap fonts", "find free game assets", "game asset tools", "where to get sprites", "create game art", "generate sound effects", "asset creation tools", "free asset packs", "asset pipeline", "placeholder to production", or needs help organizing, loading, or optimizing any game assets in Phaser 4.
 
   <example>
   Context: User needs asset organization advice
@@ -291,3 +291,55 @@ Load path: `'assets/images/sky.png'` (no leading slash, relative to server root)
 - [ ] Tilemaps exported as JSON (not TMX)
 - [ ] Loading events monitored with `load.on('loaderror')` to catch missing assets early
 - [ ] Animations created in `PreloaderScene.create()` so they're available to all scenes
+
+## Asset Creation & Sourcing Guide
+
+### Free Asset Sources
+
+| Source | URL | License | Best For |
+|--------|-----|---------|----------|
+| Kenney.nl | kenney.nl/assets | CC0 (public domain) | High-quality sprites, UI, audio, 3D models — gold standard for free assets |
+| OpenGameArt.org | opengameart.org | CC0/CC-BY/CC-BY-SA | Community-contributed sprites, tilesets, audio |
+| itch.io Assets | itch.io/game-assets | Varies (check each) | Curated asset packs, filter by "Free" |
+| freesound.org | freesound.org | CC0/CC-BY | Sound effects and ambient audio |
+| Lospec.com | lospec.com | CC0 palettes | Pixel art color palettes and tutorials |
+
+**License quick guide:**
+- **CC0** — Use for anything, no attribution required. Best for game jams and commercial.
+- **CC-BY** — Must credit the author. Fine for most projects.
+- **CC-BY-SA** — Must credit AND share your derivative under the same license. Avoid for commercial games.
+- **CC-BY-NC** — Non-commercial only. Never use for games you might sell.
+
+### Asset Creation Tools
+
+| Category | Tool | Cost | Notes |
+|----------|------|------|-------|
+| Pixel art | Aseprite | $20 | Industry standard, animation timeline, best for spritesheets |
+| Pixel art | Piskel | Free (web) | Quick prototyping, export as spritesheet |
+| Pixel art | LibreSprite | Free | Aseprite fork, open source |
+| Tilemap editor | Tiled | Free | Export as JSON for Phaser, collision properties |
+| Texture packing | free-tex-packer | Free (web) | Generate atlas JSON+PNG for Phaser |
+| Texture packing | TexturePacker | $40 | More features, CLI automation |
+| Sound effects | jsfxr | Free (web) | Procedural retro-style SFX, export as WAV |
+| Sound effects | Bfxr | Free | More options than sfxr, desktop app |
+| Music | Bosca Ceoil | Free | Simple chiptune/retro music tool |
+| Music | LMMS | Free | Full DAW, professional quality |
+| Bitmap fonts | Hiero | Free | Java-based, exports .fnt + .png for Phaser |
+| Bitmap fonts | Littera | Free (web) | Web-based bitmap font generator |
+
+### Placeholder-to-Production Workflow
+
+1. **Prototype phase:** Use `Graphics.generateTexture()` placeholders (colored rectangles/circles). The game archetypes do this automatically.
+2. **Gameplay phase:** Block out all mechanics with placeholders. Validate the game is fun before investing in art.
+3. **Art replacement:** Replace individual assets one at a time. Test after each replacement.
+4. **Atlas packing:** Once art is final, pack sprites into texture atlases using free-tex-packer or TexturePacker. Replace individual `this.load.image()` calls with `this.load.atlas()`.
+5. **Audio polish:** Add SFX and music last. Provide both mp3 and ogg formats. Compress BGM to 128kbps, SFX to 96kbps.
+6. **Optimization pass:** Check total asset size. Target under 10MB for web, under 50MB for Capacitor apps.
+
+### Asset Budget Guidelines
+
+| Project Type | Max Unique Textures | Max Audio Files | Total Asset Size |
+|-------------|-------------------|----------------|-----------------|
+| Game jam (48h) | 10-20 | 5-10 | < 5MB |
+| Small indie | 30-50 | 15-25 | < 15MB |
+| Commercial | 100-200+ | 30-50+ | < 50MB |

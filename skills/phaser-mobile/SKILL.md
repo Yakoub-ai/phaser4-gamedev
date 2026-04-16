@@ -373,7 +373,31 @@ export default {
 };
 ```
 
+## Device-Specific Profiles
+
+See `references/device-profiles.md` for complete profiles with gotchas and recommended configs.
+
+### Quick Decision Matrix
+
+| Decision | iOS Safari | Android Chrome | Desktop | Capacitor | PWA |
+|----------|-----------|---------------|---------|-----------|-----|
+| Audio format priority | mp3 (ogg unsupported) | mp3+ogg | any | mp3+ogg | mp3+ogg |
+| Max atlas size | 2048x2048 | 2048x2048 (low-end) | 4096+ | 2048x2048 | 2048x2048 |
+| Orientation lock | Capacitor only | Fullscreen API | N/A | Native plugin | manifest.json |
+| Virtual controls | Required | Required | Optional | Required | Required |
+| Haptic feedback | No | No | No | Yes (plugin) | No |
+| Offline support | Limited (50MB) | Yes | N/A | Built-in | Service worker |
+| Install prompt | Add to Home Screen | Install banner | N/A | App Store | Browser prompt |
+
+### Choosing Your Primary Platform
+
+- **Web-only (itch.io, portfolio):** Desktop-first config, FIT scale mode, 800x600 or 1280x720
+- **Mobile-first:** FIT scale mode, 640x360 landscape or 360x640 portrait, virtual controls
+- **Cross-platform:** FIT scale mode, detect device at runtime, adapt controls and asset quality
+- **Native app (App Store / Play Store):** Capacitor + platform-specific optimizations
+
 ## Additional Resources
 
 ### Reference Files
 - **`references/mobile-patterns.md`** — Full responsive GameConfig, VirtualGamepad class (joystick + buttons), OrientationGuard overlay, MobileAudioUnlock component, DeviceCapabilities detection, Capacitor native plugin integration
+- **`references/device-profiles.md`** — Device-specific optimization profiles for iOS Safari, Android Chrome, Desktop, Capacitor (iOS/Android), and PWA with recommended GameConfig per target
