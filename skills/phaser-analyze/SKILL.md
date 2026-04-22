@@ -94,7 +94,7 @@ Produce a structured report with these sections:
 ## Reference Files
 
 - **`references/analysis-checklist.md`** — Complete checklist with grep patterns, severity ratings, and fix references for all checks.
-- **`references/performance-playbook.md`** — Nine-phase performance playbook from a shipped roguelike: measurement-first prompting, per-frame allocations, registry throttling, audio lazy-load, VFX pooling, spatial grid, atlas packing, event throttling, AI tick-skip with real delta, tween cleanup. Read when FPS is below target or memory grows during gameplay.
+- **`references/performance-playbook.md`** — Nine-phase Phaser 4 performance playbook for mid-range mobile targets: measurement-first prompting, per-frame allocation elimination, registry throttling, audio lazy-load, VFX pooling, spatial grid, atlas packing, event throttling, AI tick-skip with real delta, tween cleanup. Read when FPS is below target or memory grows during gameplay.
 
 ## Automated Pre-scan
 

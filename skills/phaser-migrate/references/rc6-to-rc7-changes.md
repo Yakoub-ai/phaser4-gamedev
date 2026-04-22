@@ -36,8 +36,6 @@ camera.ignore(this.children.list.filter(c => c !== panelContent));
 
 **Important:** Alpha masks and bitmap masks are still valid in RC7. Only geometry masks for rectangular clipping are affected.
 
-`[DEVLOG Chapter 7 — 2026-04-16 Settings scroll clipping]`
-
 ---
 
 ## 2. Animation `stop()` Required Before `play()` on State Switch
@@ -60,8 +58,6 @@ sprite.play('walk', true);
 ```
 
 **Action required:** Audit every animation state-switch call site. The silent no-op makes this hard to notice in testing.
-
-`[DEVLOG Chapter 3 — 2026-04-14 Hub town anims; Chapter 7 — 2026-03-31 Animation state audit]`
 
 ---
 
@@ -89,8 +85,6 @@ if (player.pendingStateChange) {
 
 **Important:** See also `skills/phaser-animation/references/state-machine-patterns.md` for the `cinematicMode` pattern that solves this class of bug.
 
-`[DEVLOG Chapter 3 — 2026-04-14]`
-
 ---
 
 ## 4. Camera `setFollowOffset` + World-Bounds Wrap Math
@@ -114,8 +108,6 @@ this.cameras.main.on('cameraupdate', (cam: Phaser.Cameras.Scene2D.Camera) => {
   cam.scrollY = Phaser.Math.Wrap(cam.scrollY, 0, worldHeight);
 });
 ```
-
-`[DEVLOG Chapter 7 — 2026-04-10 Camera wrap]`
 
 ---
 
@@ -142,8 +134,6 @@ layer.setCollisionByProperty({ collides: true }, /* collides= */ true, /* recalc
 
 **Action required:** Run `grep -rn 'setCollisionByProperty' src/` after upgrading and re-verify each call site.
 
-`[DEVLOG Chapter 4 — 2026-04-15 Prop collision]`
-
 ---
 
 ## 6. `body.onFloor()` Frame-Timing Drift
@@ -167,8 +157,6 @@ if (landed) { landPlayer(); }
 
 **Important:** Using `onFloor()` alone in RC7 can cause a frame of "in the air" after landing, which breaks tight platformer mechanics and coyote-time systems.
 
-`[DEVLOG Chapter 7 — 2026-04-15 Enemy stuck detection]`
-
 ---
 
 ## 7. Cross-Scene Input Init: Use `READY`, Not `CREATE`
@@ -191,8 +179,6 @@ inputScene.events.once(Phaser.Scenes.Events.READY, () => { /* wire joystick */ }
 ```
 
 **Action required:** Search for `events.on.*Events.CREATE` cross-scene wiring and migrate to `READY`.
-
-`[DEVLOG Chapter 7 — 2026-04-11 Mobile joystick placement]`
 
 ---
 
@@ -220,8 +206,6 @@ enemies.forEach((enemy, i) => {
 });
 ```
 
-`[DEVLOG Chapter 7 — 2026-04-12 Ambush ring]`
-
 ---
 
 ## 9. `scale.on('resize')` After Orientation Flip
@@ -244,8 +228,6 @@ window.addEventListener('orientationchange', () => {
 });
 ```
 
-`[DEVLOG Chapter 6 — 2026-04-08 PWA / iOS safe-area]`
-
 ---
 
 ## 10. Scale Manager + READY Event for Cold-Start Sizing (iOS PWA)
@@ -263,8 +245,6 @@ game.events.once(Phaser.Core.Events.READY, () => {
 ```
 
 **Important:** See `skills/phaser-mobile/references/device-profiles.md` for the full iOS PWA device profile.
-
-`[DEVLOG Chapter 6 — 2026-04-18 iOS PWA cold-start]`
 
 ---
 

@@ -10,7 +10,7 @@ Phaser's input manager defaults to `topOnly = true`, meaning pointer events rout
 - Arrow buttons and toggles in a settings panel silently ignore taps/clicks.
 - Drag-to-scroll "blocking zones" on a guide panel make every interactive child underneath non-interactive.
 
-The guide in the shipped game hit this exact bug: a GuideScroll drag-overlay at the default depth sat above every interactive child. Phaser's topOnly routing sent every pointer event to the invisible overlay, never to the buttons.
+A common manifestation: a drag-overlay or dismiss zone added at the default depth sits above every interactive child. Phaser's topOnly routing sends every pointer event to the invisible overlay, never to the buttons beneath it.
 
 ## Pattern A — Negative depth (invisible dismiss zones)
 

@@ -45,7 +45,7 @@ scripts/         — Validation and utility scripts
 - Reference files go in the `references/` subdirectory within each skill.
 - Shell scripts must be bash, use `set -euo pipefail`, and use colored output helpers.
 
-## Development Discipline (CRITICAL -- from 32 sessions of real friction)
+## Development Discipline (CRITICAL)
 
 ### TypeScript Gate
 Always run `npx tsc --noEmit` after code changes. Never push code with TypeScript compilation errors.
@@ -70,22 +70,22 @@ Only include files that were actually changed for the current task. Do not mix u
 ### Test-Driven Complex Fixes
 For complex game mechanics (AI, physics, collisions), write a failing test first, then iterate against the test autonomously.
 
-## Prompting Discipline (from 32 sessions of real friction)
+## Prompting Discipline
 
-These are patterns that consistently produced sharp, landing-on-first-try Claude output in the shipping roguelike. When a prompt conforms to these, the result is targeted; when it doesn't, the result is generic advice that may miss the real problem. Apply these by default — they matter more than prompt length.
+These patterns consistently produce first-try-correct Claude output on Phaser 4 work. Apply them by default. They matter more than prompt length.
 
-- **Paste exact error text** — console warnings and stack traces verbatim, not paraphrased. The error string itself points at the API surface that changed.
-- **Include full stack traces even on minified builds** — function names still resolve even when line numbers are opaque. A stack trace to a minified builder file plus the source of the calling function is enough for Claude to pinpoint the null-guard that's needed.
-- **Batch playtester feedback into ONE prompt** — root causes surface when all symptoms are listed together. In the reference project, an off-axis world-wrap calculation was only visible when "enemies disappear going west" AND "enemies disappear going south" were named in the same prompt. Reported individually, Claude patched the wrong axis.
-- **Describe root cause, not symptom** — "race condition between kill-chain multiplier and movement speed stat when both trigger on the same frame" produces a different search than "speed feels wrong."
-- **Device posture for mobile bugs** — "holding the phone vertically in PWA mode" is enough context to anchor iOS-specific root causes. A "mobile bug" without posture is a grab-bag.
-- **Name specific states in animation acceptance criteria** — `idle | walk | attack | death | dodge`, not "make it feel better." Concrete state lists produce state-machine code; mood words produce cosmetic tweaks.
-- **Stat deltas as concrete numbers** — "HP 2500 → 1400, cooldown 1600 → 2400 ms" not "make it weaker." Numbers produce configs; adjectives produce guesses.
-- **State visual contracts explicitly** — "50% ground color, 50% grass, visible on all biomes" not "make the ramp readable." If you do not specify the contract, Claude will pick ONE that looks good in the first biome.
-- **"ASK ME QUESTIONS IF ANYTHING IS UNCLEAR" at the top of ambiguous prompts** — signals that clarification is preferred over guessing. Claude will ask exactly the question that would have saved an iteration round-trip.
-- **Paste observed CSS values for iOS PWA bugs** — "`env(safe-area-inset-top)` returns 0 in landscape PWA" points directly at the failure mode. "iOS layout is broken" points at nothing.
-- **Reproduction step for AI / physics bugs** — "stand at the base of the north cliff and let enemies chase you." Claude cannot play the game; a concrete step is the closest thing to a test.
-- **Phased roadmap BEFORE opening the chat** — writing an explicit 3- or 4-phase plan into the prompt (interfaces first, data shapes second, build order third) cuts iteration in half. Discovering constraints mid-session produces tangled code.
+- **Paste exact error text verbatim** — console errors and stack traces as the browser shows them. The exact string usually points at the API surface that changed.
+- **Include full stack traces** even on minified builds. Function names still resolve; line numbers may be opaque but the call chain is enough to pinpoint a null-guard or mis-ordered lifecycle hook.
+- **Batch related symptoms into one prompt.** When multiple playtest reports might share a root cause, list them together. Single symptoms invite patch-one-site fixes; grouped symptoms surface the common cause.
+- **Describe root cause, not symptom.** "The enemy AI's stuck-detection uses `body.velocity` which returns zero when pushing against a wall" produces a different search than "enemies sometimes get stuck." If you don't know the root cause, say so explicitly and ask for diagnosis — do not guess.
+- **Device posture for mobile bugs** — browser and version, iOS vs Android, Safari tab vs PWA vs Capacitor, orientation, touch vs mouse. Most "mobile bugs" are specific-platform bugs indistinguishable without this.
+- **Name acceptance criteria concretely.** For animation work: list the specific states (`idle`, `walk`, `attack`, `death`, `dodge`). For balance work: list the numbers (`HP 2500 → 1400`). Mood words ("make it feel better") produce cosmetic tweaks, not mechanics.
+- **State visual contracts explicitly** — "50% background color, 50% foreground, readable on all backgrounds" rather than "make the asset visible." Without an explicit contract, Claude will pick one that looks good in one context.
+- **Paste observed values for platform bugs** — exact `env(safe-area-inset-*)` values for iOS PWA layout bugs, exact `game.loop.actualFps` reading for performance bugs, exact heap-size deltas for leak bugs. Numbers anchor diagnosis; adjectives don't.
+- **Reproduction step for AI / physics bugs** — the minimal game-state setup that triggers the issue. Claude cannot play the game; a concrete step is the closest thing to a test.
+- **Phased roadmap before opening chat on non-trivial work** — writing the planned phases (interfaces first, data shapes second, build order third) into the prompt cuts iteration significantly. Discovering constraints mid-session produces tangled code.
+- **"Ask clarifying questions before proceeding if anything is unclear"** at the top of ambiguous prompts signals that clarification is preferred over guessing. Without it, Claude often produces a confident wrong answer.
+- **After substantial changes, run `npx tsc --noEmit` before handing back.** Treat TypeScript compilation as a pre-flight check, not an afterthought.
 
 ## Validation
 

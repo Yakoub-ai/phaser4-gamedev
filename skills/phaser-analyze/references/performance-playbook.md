@@ -1,6 +1,6 @@
 # Phaser 4 Performance Playbook
 
-A nine-phase optimization playbook distilled from shipping a Phaser 4 roguelike to 60 FPS on mid-range Android. Use this when a game is already slow — NOT as a premature optimization guide.
+A nine-phase playbook for taking a Phaser 4 game from sluggish to smooth on mid-range mobile (roughly Snapdragon 600-series Android, iPhone 11-class iOS). Use this when a game is already slow — NOT as a premature-optimization checklist. Apply phases in order of measured impact, not in sequence.
 
 ## Step 1 — Measure, don't guess
 
@@ -54,7 +54,7 @@ Tier by read frequency:
 - **Bestiary / codex data read on pause-screen only:** throttle writes to 500 ms or only write on meaningful change.
 - **Save-critical data (high score, unlocks):** write immediately; these fire once per event, not every frame.
 
-### Phase 3: Audio boot budget 82 → 2 MB via lazy-load
+### Phase 3: Audio boot budget reduction via lazy-load
 
 Don't preload every track in BootScene. Load only the menu music + UI SFX; lazy-load biome / boss / dungeon tracks on demand.
 
@@ -67,7 +67,7 @@ if (!this.cache.audio.exists(`bgm-${biomeKey}`)) {
 }
 ```
 
-Compression pass: 82 MB raw → 28 MB combined after re-encoding at 96 kbps mono mp3 for music, 64 kbps for SFX. Budget before compression, not after — always check the compressed size.
+Compression pass: a 2D action game with ~40 music tracks typically compresses from ~80 MB raw to ~25-30 MB combined at 96 kbps mono mp3 for music, 64 kbps for SFX. Budget before compression, not after — always check the compressed size.
 
 ### Phase 4: VFX Graphics pooled
 
@@ -92,7 +92,7 @@ class VfxPool {
 
 ### Phase 5: Spatial grid replaces brute-force proximity
 
-Brute-force O(n²) proximity: 400 entities → 160 000 checks/frame. Spatial grid: 400 entities × 9 cells (3×3 neighborhood) → ~3 600 checks/frame (96 % fewer).
+Brute-force O(n²) proximity: 400 entities → 160 000 checks/frame. Spatial grid: 400 entities × 9 cells (3×3 neighborhood) → ~3 600 checks/frame (~96% fewer). Typical result when this phase is applied to a game of similar scope.
 
 ```typescript
 class SpatialGrid {
@@ -124,9 +124,9 @@ class SpatialGrid {
 
 Rebuild the grid each frame in `update()` (cheap — one insert per entity) before running proximity logic.
 
-### Phase 6: Atlas pack 197 HTTP requests → 8
+### Phase 6: Atlas pack to reduce HTTP requests
 
-Bundle sprites into texture atlases at build time. 197 individual PNG requests is 197 HTTP round-trips; 8 atlas requests is 8. On a cold mobile connection, this alone can cut load time by 20+ seconds.
+Bundle sprites into texture atlases at build time. Individual PNG requests are individual HTTP round-trips; a mid-size 2D action game with unatlased sprites can easily generate 150–200 requests on first load — atlased, the same assets typically collapse to fewer than 10. On a cold mobile connection, this alone can cut load time by 20+ seconds.
 
 Tools:
 - `texturepacker` — gold standard; outputs Phaser-compatible JSON.
@@ -202,7 +202,7 @@ Is actual FPS below 55 on target?
 
 ## Prompting template for performance work
 
-When asking Claude for performance help, structure the prompt like a profiling report:
+A well-formed performance-help prompt looks like this:
 
 > The game is running at 34 FPS on a Pixel 6a during combat with ~180 enemies alive. Chrome DevTools shows 92% CPU in the main thread, heap growing +2 MB per 10 seconds of gameplay, and `this.physics.world.bodies.entries.length` reports 312. Audio boot loads 47 MB before first frame. My tween count (`this.tweens.getTweens().length`) is 240 during combat.
 

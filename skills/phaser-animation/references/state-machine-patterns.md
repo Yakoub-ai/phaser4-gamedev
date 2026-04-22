@@ -110,7 +110,7 @@ sprite.on(Phaser.Animations.Events.ANIMATION_COMPLETE_KEY + 'attack', () => {
 
 ## Worked example: cinematic dungeon-entry walk-in
 
-This is the shape of code that solves the "forced animation stomped by next tick" bug in a real shipped game:
+A complete example showing `cinematicMode` in action — a player character walking into a dungeon entrance with fade and shrink tweens layered over a looping walk animation. Without `cinematicMode`, the first `update()` tick after the forced `play('player-walk-up', true)` would revert to idle, because `body.velocity.x/y` is zero (the tween tweens `x/y` directly, not velocity).
 
 ```typescript
 // In GameScene, when the player interacts with a dungeon entrance:
