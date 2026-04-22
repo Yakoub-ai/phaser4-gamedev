@@ -1,7 +1,7 @@
 ---
 name: phaser-physics
 description: This skill should be used when the user asks to "add physics", "set up collisions", "implement gravity", "create a platformer", "add physics to sprite", "detect overlaps", "create collision groups", "make objects bounce", "top-down movement", "set velocity", "apply forces", "enable arcade physics", or needs any Arcade Physics configuration in Phaser 4.
-version: 0.1.0
+version: 0.4.0
 ---
 
 # Phaser 4 Arcade Physics

@@ -157,6 +157,16 @@ this.game.events.on('globalEvent', handler);
 
 **Avoid:** Sharing mutable state via module globals. Avoid `window.*` for game state.
 
+### Registry Centralization Discipline (CRITICAL)
+
+Before any `scene.launch()`-style parallel scene (HUDScene, PauseScene, BackgroundScene, DungeonScene-over-GameScene), the **Registry schema MUST be finalized**. Parallel scenes that hold local mirrors of progression state (level, kills, timer, inventory) diverge silently — a full chapter of the reference-project devlog documents dungeon/overworld stat resets caused exactly by this.
+
+**Rules:**
+
+1. **Define the Registry schema BEFORE Step 6** — create `src/types/registry-keys.ts` with an enum of all Registry keys, and a typed `GameRegistry` wrapper (see `skills/phaser-scene/references/scene-patterns.md` → Registry Patterns). Do this before ANY parallel-scene code is written.
+2. **Parallel scenes read/write Registry ONLY** — never cache the other scene's reference and read its instance properties. That's what diverges.
+3. **Module-level `GAME_WIDTH` / `GAME_HEIGHT` constants are FORBIDDEN for sizing backdrops, overlays, or HUD containers.** They freeze at import time and leak off the right edge once the canvas grows (iOS rotation, Safari toolbar collapse, orientation-lock release). Use `this.cameras.main.width/height` inside `create()` + a `this.scale.on('resize', ...)` listener. See `skills/phaser-scene/references/scene-patterns.md` → Responsive Sizing: Two Layers.
+
 ### Step 5 — Asset Pipeline
 
 Recommended directory:
@@ -226,6 +236,8 @@ When planning implementation phases that will use parallel agents:
 2. **Specify property names explicitly** — In the architecture document, list exact property names for each game object (e.g., Player.speed, Player.jumpPower, not vague descriptions).
 3. **Pin asset keys** — List every asset key that will be used, so all scenes reference consistent keys.
 4. **Build verification gate** — After each implementation phase, run `npx tsc --noEmit` before proceeding to the next phase.
+5. **Registry schema frozen before parallel scenes** — any scene launched via `scene.launch()` (not `scene.start()`) must rely exclusively on Registry / scene events, never on module globals or a direct scene-ref cache. See "Registry Centralization Discipline" above.
+6. **Question-first when ambiguous** — if genre/scope/platform isn't clear from the user's prompt or a GDD, ask ONE focused question (via `AskUserQuestion` if available) before designing. Producing an architecture for the wrong genre wastes more tokens than one clarifier.
 
 ## Output Format
 

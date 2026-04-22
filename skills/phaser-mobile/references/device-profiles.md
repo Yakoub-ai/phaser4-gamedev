@@ -12,6 +12,7 @@ Comprehensive profiles for each target platform, including texture limits, audio
 - **WebGL:** full Phaser Beam support
 - **Touch:** up to 5 simultaneous touch points
 - **Gotcha:** `100vh` includes Safari toolbar — use `window.innerHeight` instead for accurate viewport height
+- **Stronger pattern (iOS PWA landscape):** `env(safe-area-inset-top/right/bottom/left)` silently returns `0` in iOS PWA landscape mode — no generic viewport fix catches this. Use `100dvh` (dynamic viewport height) in CSS for the game container. `100dvh` correctly accounts for dynamic chrome in both portrait and landscape. When debugging iOS PWA layout bugs, log the exact `env(safe-area-inset-*)` values you observe in the browser — if they are all `0`, you are in the landscape PWA failure mode.
 - **Gotcha:** iOS 16.4+ required for PWA push notifications
 - **Performance target:** 60fps on iPhone 12+, accept 30fps on iPhone 8/SE
 
@@ -47,6 +48,7 @@ Inherits all iOS Safari constraints PLUS:
 - **Splash screen control** via `@capacitor/splash-screen` (set `launchShowDuration: 0` for games with own loading screen)
 - **App Store requirements:** no external code loading (all JS must be bundled), privacy manifest required since iOS 17
 - **Minimum deployment target:** iOS 14+ recommended
+- **Interactive hotspots:** always provide tap-to-enter (pointer events) alongside any keyboard-only hotkey. "Press E to enter" and "Press F to interact" prompts are undiscoverable on mobile. Wire `sprite.setInteractive().on('pointerdown', ...)` in parallel with the keyboard handler.
 
 ## Capacitor Android (Native)
 
@@ -66,6 +68,46 @@ Inherits all Android Chrome constraints PLUS:
 - **Display:** `"fullscreen"` for game-like experience (no browser chrome)
 - **Orientation:** set in `manifest.json` — `"orientation": "landscape"` or `"portrait"`
 - **Gotcha:** iOS PWAs have limited cache (50MB max), keep total assets under 40MB
+
+## iOS PWA Cold-Start Half-Screen Fix
+
+**Symptom:** Opening the PWA while holding the phone vertically shows the boot scene filling only the top half of the screen — the bottom half is solid black. Rotating the phone (or waiting a few seconds and interacting) fixes it. The bug doesn't happen in Safari tab mode, only in PWA standalone mode.
+
+**Root cause:** On iOS PWA cold-launch, the viewport settles AFTER Phaser's first sizing pass. By the time the canvas sizes itself, the viewport reports a smaller height than the device will actually give it a beat later.
+
+**Fix — call your size-sync inside Phaser's `READY` event plus one 300 ms retry:**
+
+```typescript
+// src/main.ts — after new Phaser.Game(config):
+const game = new Phaser.Game(config);
+
+function syncGameSize(): void {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  game.scale.resize(w, h);
+  game.scale.refresh();
+}
+
+game.events.once(Phaser.Core.Events.READY, () => {
+  syncGameSize();
+  setTimeout(syncGameSize, 300); // safety net for late-settling viewports
+});
+
+window.addEventListener('resize', syncGameSize);
+window.addEventListener('orientationchange', () => {
+  requestAnimationFrame(syncGameSize);
+});
+```
+
+The 300 ms retry is not a hack — it is the observed time for the iOS PWA viewport to settle on cold-launch. Without it, any game will render half-screen on first launch.
+
+## Virtual Joystick on iOS
+
+**First-contact lock:** the joystick base must stay locked at its initial-touch position during a drag. Only the thumb follows the finger. If the base "jumps" to follow the finger, someone added base-reposition logic to `onPointerMove` — that's the bug.
+
+**Cross-scene persistence:** if the joystick works in one gameplay scene but not another, you've instantiated it per-gameplay-scene. Each `scene.start()` tears down the previous scene and destroys the joystick's listeners. Move the joystick into a dedicated `InputScene` launched once via `scene.launch()`, and read joystick state from the InputScene reference in gameplay scenes' `update()`.
+
+See `skills/phaser-input/references/virtual-joystick.md` for the full implementation, both bug patterns, and the `InputScene` cross-scene template.
 
 ## Recommended GameConfig Per Target
 

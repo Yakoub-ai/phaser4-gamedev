@@ -1,7 +1,7 @@
 ---
 name: phaser-mobile
 description: This skill should be used when the user asks to "mobile game", "responsive game", "touch controls", "deploy to phone", "Capacitor", "PWA game", "scale manager", "orientation", "iOS game", "Android game", "full screen game", "mobile performance", etc.
-version: 0.2.0
+version: 0.4.0
 ---
 
 # Phaser 4 Mobile & Responsive

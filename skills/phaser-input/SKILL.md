@@ -1,7 +1,7 @@
 ---
 name: phaser-input
 description: This skill should be used when the user asks to "handle input", "keyboard controls", "mouse click", "touch controls", "gamepad support", "drag and drop", "virtual joystick", "WASD movement", "detect click", "pointer events", "keyboard shortcut", or "input manager".
-version: 0.2.0
+version: 0.4.0
 ---
 
 # Phaser 4 Input
@@ -398,6 +398,8 @@ update(): void {
 Phaser 4 has no built-in virtual joystick. For mobile games, implement a pointer-based joystick or use the reference implementation.
 
 See `references/virtual-joystick.md` for a complete, production-ready TypeScript class that renders a base circle and thumb and exposes normalized `direction.x` / `direction.y` values.
+
+Two common bugs are documented in that reference file: (1) **First-Contact Lock** — the base must stay locked during a drag; if the base "jumps" as the user drags, someone is updating `baseX/baseY` in `onPointerMove`. (2) **Cross-scene listener loss** — if the joystick works in one scene but not another, instantiate it ONCE in a persistent `InputScene` launched via `scene.launch()`, not per-gameplay-scene.
 
 Usage pattern:
 

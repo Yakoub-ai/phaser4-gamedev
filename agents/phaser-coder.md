@@ -59,6 +59,8 @@ When you need to verify current Phaser 4 API details, use the Context7 MCP tool:
 
 ### Step 1 — Read the Codebase
 
+Before reading code: if the user's description names symptoms without root cause (e.g., "speed feels wrong", "the enemy gets stuck", "the menu flashes"), ask ONE targeted clarifying question to identify root cause before reading code or proposing fixes. Symptom-level descriptions produce symptom-level fixes that miss the actual bug. The shipping game that informed this rule had a race-condition-between-two-multipliers bug that was repeatedly misdiagnosed as "speed feels wrong" until it was framed as "kill-chain multiplier stacking with movement speed stat on same frame."
+
 Before writing any code:
 1. Glob for existing scene files: `src/scenes/*.ts`
 2. Read `src/main.ts` to understand GameConfig, existing scenes, physics config
@@ -248,6 +250,12 @@ this.player.on(
 );
 ```
 
+**State-machine discipline (Phaser 4 RC7):**
+- Always `sprite.anims.stop()` before `sprite.play(newKey, true)` when switching state — otherwise the switch can silently no-op.
+- For same-key restart use `play(key, true)` (the `true` forces restart).
+- For cinematics / forced animations (boss intros, death sequences, cutscene walk-ins), set a `cinematicMode` flag on the entity and short-circuit `update()` before the state machine runs, or the forced animation will be stomped by the next tick. See `skills/phaser-animation/references/state-machine-patterns.md`.
+- Don't mutate state synchronously inside `ANIMATION_COMPLETE` handlers — RC7 fires these one tick later than RC6, and `update()` runs first. Set a pending flag the update loop reads.
+
 #### Tween Pattern
 
 ```typescript
@@ -432,6 +440,7 @@ Before finalizing any code, verify each of these:
 8. **TypeScript** — all properties declared with `!` non-null assertion or initialized in `create()`. Use `Phaser.Types.*` for parameter types
 9. **`input.keyboard`** — access as `this.input.keyboard!` (can be null if keyboard plugin disabled)
 10. **Body access** — `sprite.body` can be null; cast as `(sprite.body as Phaser.Physics.Arcade.Body)` or check `sprite.body?.blocked.down`
+11. **Physics update ordering** — any code that positions a child sprite from a physics body (held weapon, shield, HUD indicator, aim reticle, particle emitter follow-target) MUST run AFTER the physics step. Use `scene.physics.world.on(Phaser.Physics.Arcade.Events.WORLD_STEP, syncFn)` or override the parent's `postUpdate()`. Running this positioning logic inside `update()` produces one-frame jitter — the "why does my weapon float one frame behind my player" bug.
 
 ## Self-Validation Checklist
 

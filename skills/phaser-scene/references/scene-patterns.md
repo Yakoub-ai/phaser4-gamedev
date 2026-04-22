@@ -151,6 +151,81 @@ scene.registry.events.on('changedata-score', (parent: Phaser.Scene, value: numbe
 });
 ```
 
+## Responsive Sizing: Two Layers (iOS-safe)
+
+Responsive Phaser games have TWO independent sizing layers, and fixing only one leaves the other broken:
+
+1. **Canvas layer** — CSS scale mode, parent div sizing, safe-area insets. Set in `main.ts` / GameConfig + CSS.
+2. **In-game element layer** — HUD positions, overlay `fillRect` dimensions, panel backdrop sizing. Set inside each scene's `create()`.
+
+If your HUD positions are computed from module-level `GAME_WIDTH` / `GAME_HEIGHT` constants baked at import time, they will NOT update when the canvas grows (iOS rotation, Safari toolbar collapse, full-screen entry). The backdrop leaks off the right edge; the HUD drifts off-center.
+
+**Correct pattern — live camera dimensions + resize listener:**
+
+```typescript
+export class LevelUpScene extends Phaser.Scene {
+  private backdrop!: Phaser.GameObjects.Rectangle;
+
+  create(): void {
+    // READ FROM LIVE CAMERA, not from imported constants:
+    const { width, height } = this.cameras.main;
+
+    this.backdrop = this.add.rectangle(0, 0, width, height, 0x000000, 0.75)
+      .setOrigin(0, 0);
+
+    // React to canvas resize (orientation, full-screen, toolbar collapse):
+    this.scale.on('resize', this.onResize, this);
+  }
+
+  private onResize(gameSize: Phaser.Structs.Size): void {
+    this.backdrop.setSize(gameSize.width, gameSize.height);
+    // ...reposition any other HUD elements that depend on viewport...
+  }
+
+  shutdown(): void {
+    // CRITICAL: remove the listener so it doesn't accumulate across scene restarts.
+    this.scale.off('resize', this.onResize, this);
+  }
+}
+```
+
+**Anti-pattern to recognize during code review:**
+
+```typescript
+// BAD — GAME_WIDTH is frozen at import time:
+import { GAME_WIDTH, GAME_HEIGHT } from './constants';
+this.backdrop = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.75);
+```
+
+Any overlay scene (PauseScene, LevelUpScene, SettingsScene, GameOverScene) that sizes its backdrop from `GAME_WIDTH` / `GAME_HEIGHT` imported constants will leak past the right edge as soon as the canvas grows — even once. Use the live-camera + resize-listener pattern above.
+
+## Cross-Scene Input Initialization (Phaser 4 RC7)
+
+For shared input layers (virtual joystick, global keyboard bindings, gamepad service) that span multiple gameplay scenes, listen on the **target scene's `READY` event** — NOT on the launcher scene's `CREATE`.
+
+In RC7, the launcher's `CREATE` fires before the target scene's input plugins are fully attached. Calling `this.input.keyboard!.on(...)` from a `CREATE` listener is a silent no-op: the keyboard plugin is still initializing.
+
+```typescript
+// BEFORE (worked in RC6, fails silently in RC7):
+this.scene.launch('InputScene');
+const inputScene = this.scene.get('InputScene');
+inputScene.events.on(Phaser.Scenes.Events.CREATE, () => {
+  // keyboard plugin may not be ready yet — binds sometimes drop
+  inputScene.input.keyboard!.on('keydown-ESC', this.openPauseMenu, this);
+});
+
+// AFTER (reliable in RC7):
+this.scene.launch('InputScene');
+const inputScene = this.scene.get('InputScene');
+inputScene.events.once(Phaser.Scenes.Events.READY, () => {
+  inputScene.input.keyboard!.on('keydown-ESC', this.openPauseMenu, this);
+});
+```
+
+**Rule of thumb:** `CREATE` fires when the scene's objects start being built; `READY` fires when plugins are fully attached and input bindings are safe to register. For cross-scene wiring, always use `READY`.
+
+See also `skills/phaser-migrate/references/rc6-to-rc7-changes.md` → section 7 for the full RC6/RC7 comparison.
+
 ## Scene Plugin Architecture
 
 For shared functionality across scenes, use the Scene Plugin system:

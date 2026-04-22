@@ -1,7 +1,7 @@
 ---
 name: phaser-init
 description: This skill should be used when the user asks to "create a Phaser game", "initialize a Phaser 4 project", "scaffold a Phaser project", "set up a new game", "start a Phaser project", "bootstrap a game", "npm create phaser", or wants to start a Phaser 4 project from scratch.
-version: 0.1.0
+version: 0.4.0
 ---
 
 # Phaser 4 Project Initialization

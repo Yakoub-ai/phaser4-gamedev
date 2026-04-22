@@ -1,7 +1,7 @@
 ---
 name: phaser-gdd
 description: This skill should be used when the user asks to "write a game design document", "create a GDD", "design my game", "document game mechanics", "plan game progression", "define core loop", "art direction", "audio design plan", "monetization strategy", "game concept document", "plan my game before coding", or wants to produce a structured design document for a Phaser 4 game before writing any code.
-version: 0.1.0
+version: 0.4.0
 ---
 
 # Phaser 4 Game Design Document Generator

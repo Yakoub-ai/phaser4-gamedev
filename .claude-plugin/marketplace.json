@@ -5,14 +5,14 @@
   },
   "metadata": {
     "description": "Phaser 4 game development toolkit for Claude Code — scaffolding, scenes, physics, migration, debugging, GDD generation, project analysis, and 9 game archetypes",
-    "version": "0.3.0"
+    "version": "0.4.0"
   },
   "plugins": [
     {
       "name": "phaser4-gamedev",
       "source": "./",
       "description": "Comprehensive Phaser 4 game development toolkit — scaffolding, scene creation, game objects, physics, debugging, v3 migration, GDD generation, project analysis, and 9 game archetypes",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "category": "gamedev",
       "tags": ["phaser", "phaser4", "gamedev", "game-development", "webgl", "typescript", "2d-games"]
     }

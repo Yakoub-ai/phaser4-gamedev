@@ -70,6 +70,23 @@ Only include files that were actually changed for the current task. Do not mix u
 ### Test-Driven Complex Fixes
 For complex game mechanics (AI, physics, collisions), write a failing test first, then iterate against the test autonomously.
 
+## Prompting Discipline (from 32 sessions of real friction)
+
+These are patterns that consistently produced sharp, landing-on-first-try Claude output in the shipping roguelike. When a prompt conforms to these, the result is targeted; when it doesn't, the result is generic advice that may miss the real problem. Apply these by default — they matter more than prompt length.
+
+- **Paste exact error text** — console warnings and stack traces verbatim, not paraphrased. The error string itself points at the API surface that changed.
+- **Include full stack traces even on minified builds** — function names still resolve even when line numbers are opaque. A stack trace to a minified builder file plus the source of the calling function is enough for Claude to pinpoint the null-guard that's needed.
+- **Batch playtester feedback into ONE prompt** — root causes surface when all symptoms are listed together. In the reference project, an off-axis world-wrap calculation was only visible when "enemies disappear going west" AND "enemies disappear going south" were named in the same prompt. Reported individually, Claude patched the wrong axis.
+- **Describe root cause, not symptom** — "race condition between kill-chain multiplier and movement speed stat when both trigger on the same frame" produces a different search than "speed feels wrong."
+- **Device posture for mobile bugs** — "holding the phone vertically in PWA mode" is enough context to anchor iOS-specific root causes. A "mobile bug" without posture is a grab-bag.
+- **Name specific states in animation acceptance criteria** — `idle | walk | attack | death | dodge`, not "make it feel better." Concrete state lists produce state-machine code; mood words produce cosmetic tweaks.
+- **Stat deltas as concrete numbers** — "HP 2500 → 1400, cooldown 1600 → 2400 ms" not "make it weaker." Numbers produce configs; adjectives produce guesses.
+- **State visual contracts explicitly** — "50% ground color, 50% grass, visible on all biomes" not "make the ramp readable." If you do not specify the contract, Claude will pick ONE that looks good in the first biome.
+- **"ASK ME QUESTIONS IF ANYTHING IS UNCLEAR" at the top of ambiguous prompts** — signals that clarification is preferred over guessing. Claude will ask exactly the question that would have saved an iteration round-trip.
+- **Paste observed CSS values for iOS PWA bugs** — "`env(safe-area-inset-top)` returns 0 in landscape PWA" points directly at the failure mode. "iOS layout is broken" points at nothing.
+- **Reproduction step for AI / physics bugs** — "stand at the base of the north cliff and let enemies chase you." Claude cannot play the game; a concrete step is the closest thing to a test.
+- **Phased roadmap BEFORE opening the chat** — writing an explicit 3- or 4-phase plan into the prompt (interfaces first, data shapes second, build order third) cuts iteration in half. Discovering constraints mid-session produces tangled code.
+
 ## Validation
 
 Run the plugin structure validator:

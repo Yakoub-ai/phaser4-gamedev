@@ -1,7 +1,7 @@
 ---
 name: phaser-analyze
 description: This skill should be used when the user asks to "analyze my game", "review my Phaser project", "audit project health", "find bottlenecks", "refactor my game", "improve my code", "optimize my project", "what's wrong with my game", "code review Phaser", or "assess architecture".
-version: 0.1.0
+version: 0.4.0
 ---
 
 # Phaser 4 Brownfield Project Analysis
@@ -94,6 +94,7 @@ Produce a structured report with these sections:
 ## Reference Files
 
 - **`references/analysis-checklist.md`** — Complete checklist with grep patterns, severity ratings, and fix references for all checks.
+- **`references/performance-playbook.md`** — Nine-phase performance playbook from a shipped roguelike: measurement-first prompting, per-frame allocations, registry throttling, audio lazy-load, VFX pooling, spatial grid, atlas packing, event throttling, AI tick-skip with real delta, tween cleanup. Read when FPS is below target or memory grows during gameplay.
 
 ## Automated Pre-scan
 

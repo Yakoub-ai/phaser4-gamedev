@@ -1,7 +1,7 @@
 ---
 name: phaser-scene
 description: This skill should be used when the user asks to "create a scene", "add a new scene", "make a menu scene", "create a game over screen", "add a level", "set up scene transitions", "create a pause screen", "add a preloader", "create a HUD overlay", or needs any Phaser 4 scene created, structured, or connected to other scenes.
-version: 0.1.0
+version: 0.4.0
 ---
 
 # Phaser 4 Scene Creation

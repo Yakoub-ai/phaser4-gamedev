@@ -1,7 +1,7 @@
 ---
 name: phaser-matter
 description: This skill should be used when the user asks to "Matter physics", "realistic physics", "polygon collision", "joints", "constraints", "complex physics shapes", "Matter.js", "ragdoll", "hinge joint", "compound body", "physics sensor", etc.
-version: 0.2.0
+version: 0.4.0
 ---
 
 # Phaser 4 Matter Physics
