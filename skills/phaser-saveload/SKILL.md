@@ -1,7 +1,7 @@
 ---
 name: phaser-saveload
 description: This skill should be used when the user asks to "save game", "load game", "persist progress", "save state", "local storage", "save slot", "auto-save", "high score", "save settings", "save data", etc.
-version: 0.2.0
+version: 0.4.0
 ---
 
 # Phaser 4 Save & Load

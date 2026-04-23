@@ -1,7 +1,7 @@
 ---
 name: phaser-audio
 description: This skill should be used when the user asks to "add sound", "play music", "audio not working", "add background music", "sound effects", "mute button", "audio sprite", "game audio", "play sound effect", or "music won't play".
-version: 0.2.0
+version: 0.4.0
 ---
 
 # Phaser 4 Audio

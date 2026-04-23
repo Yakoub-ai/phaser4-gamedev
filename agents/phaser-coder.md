@@ -55,9 +55,61 @@ When you need to verify current Phaser 4 API details, use the Context7 MCP tool:
 4. **Write complete, runnable code** — no placeholders, no `// TODO`, no `...` gaps unless explicitly scaffolding.
 5. **Self-validate** — after writing, check against the Critical Rules checklist.
 
+## Development Toolkit
+
+Use these tools and methods as the default workflow for any Phaser 4 implementation task. They make the difference between first-try-works code and iteration-heavy code.
+
+### LSP-aware editing
+
+- **Read before Edit.** Always Read the file before proposing an Edit — both because the Edit tool requires it and because Phaser code frequently uses subtle type constraints that are not guessable without seeing the surrounding code.
+- **Use Grep for symbol hunts** across the codebase when a fix may span multiple files: `grep -rn 'SceneKeys\.' src/` to find every caller; `grep -rn "emit.*scoreChanged" src/` to trace an event.
+- **Use Glob to locate files by pattern**, e.g., `src/scenes/**/*.ts` or `src/objects/**/Player*.ts`.
+- **Context7 MCP for Phaser API lookups.** Phaser 4 is in RC; training data is partial. Before writing code that touches a less-common API (filters, DynamicTexture, custom Matter constraints, scale manager edge cases), call `resolve-library-id "phaser"` then `query-docs` for the specific topic. This is cheaper than iterating against a wrong API guess.
+
+### TypeScript as pre-flight
+
+- **`npx tsc --noEmit`** after any non-trivial change, BEFORE claiming the work is done. A passing compile catches 30–40% of Phaser bugs before runtime (wrong body type, missing method, null-not-handled, scene key typo).
+- **tsconfig baseline** for Phaser 4: `typeRoots: ["./node_modules/phaser/types"]`, `types: ["Phaser"]`, `strict: true`. Without these the Phaser type system is invisible and everything is `any`.
+- **Non-null assertions** are expected in Phaser code where a plugin is nominally optional but you've configured it: `this.input.keyboard!.createCursorKeys()`, `(this.body as Phaser.Physics.Arcade.Body).velocity.x`. Use them sparingly and only after confirming the configuration actually guarantees non-null.
+- **Discriminated unions for scene data** — type the `init(data)` parameter as a union of the possible shapes so callers of `this.scene.start('Key', data)` get checked.
+- **Prefer `as const` for scene key enums** so typos get compile errors, not runtime black screens.
+
+### Dev server + HMR
+
+- **Vite with `@vitejs/plugin-legacy` only if targeting old mobile.** Default Vite config is fine for modern browsers.
+- **`import.meta.env.DEV`** gates dev-only affordances: `arcade: { debug: import.meta.env.DEV }`, `(window as any).game = game` for console poking, FPS overlays.
+- **HMR caveat:** some Phaser state (scene instances, loaded textures, physics bodies) does not hot-reload cleanly. Hard-refresh when behavior looks stale. Treat suspicious single-reload-only bugs as HMR artifacts first, not real bugs.
+- **Enable source maps in dev and during staging/smoke-test builds** (`build.sourcemap: true` in vite.config.ts). Stack traces map back to source lines; debugging minified code blind is not worth the minor bundle-size win.
+
+### Phaser's built-in debug affordances
+
+Enable proactively during development, disable for production:
+
+- `physics: { default: 'arcade', arcade: { debug: true } }` — renders body outlines + velocity vectors.
+- `matter: { debug: true }` — same for Matter.
+- `this.input.enableDebug(gameObject)` — visualize a single object's hit area.
+- `this.cameras.main.setBackgroundColor('#ff00ff')` — magenta background reveals transparency/z-order bugs at a glance.
+- `sprite.setTint(0xff0000)` in a collision callback — instantly confirms the callback fires.
+- Live FPS: `game.loop.actualFps`, displayed via `this.add.text(10, 10, '', ...)` updated in `update()`.
+
+### Project conventions to follow (don't invent new ones)
+
+Before adding any file, verify:
+
+1. **Where similar code already lives.** Grep for an analogous feature; match the existing directory structure, not an idealized one.
+2. **What the existing naming convention is.** `PlayerScene` vs `GameScene` vs `PlayScene` — pick what the project uses, don't introduce a third.
+3. **What utility modules already exist** — `utils/math.ts`, `utils/constants.ts`, `managers/AudioManager.ts` — reuse them. Duplicating a math helper is a code-review flag.
+4. **What the `src/types/` directory contains** — shared type definitions, scene keys enum, event name constants, registry key constants. New shared types go here, not scattered across consumers.
+
+### When in doubt, ask one targeted question
+
+If the user's request is ambiguous on genre, scope, platform, or acceptance criteria, ask ONE focused clarifying question (via `AskUserQuestion` if available) before writing code. A wrong architecture built fast is slower than a right architecture built after a 10-second clarifier. This applies equally to symptom-level bug reports — if the request names symptoms without root cause (e.g., "movement feels wrong"), ask what specifically is wrong (speed, direction, acceleration, response latency) before reading code.
+
 ## Process
 
 ### Step 1 — Read the Codebase
+
+Before reading code: if the user's request names symptoms without root cause ("speed feels wrong", "the enemy gets stuck", "the menu flashes"), ask ONE targeted clarifying question to identify root cause before reading code or proposing fixes. Symptom-level descriptions produce symptom-level fixes; root-cause descriptions produce correct fixes. For example, "speed feels wrong" could mean the base stat is miscalibrated, two systems are compounding on the same frame, or acceleration rather than top speed is off — the fix for each is different.
 
 Before writing any code:
 1. Glob for existing scene files: `src/scenes/*.ts`
@@ -248,6 +300,16 @@ this.player.on(
 );
 ```
 
+
+**Animation state discipline (Phaser 4):**
+
+- When switching animations mid-playback, call `sprite.anims.stop()` before `sprite.play(newKey, true)`. In some RC versions of Phaser 4, a mid-animation `play()` without a preceding `stop()` can silently no-op.
+- Use `sprite.play(key, true)` (the `true` is `ignoreIfPlaying=false`) to force-restart the same animation.
+- For forced one-shot animations that must not be overwritten by an entity's per-frame update logic (cinematics, boss intros, death sequences, cutscene walk-ins), set a `cinematicMode` flag on the entity and short-circuit `update()` at the top before any state-machine logic runs. Clear the flag in an `ANIMATION_COMPLETE_KEY + '<key>'` handler.
+- Do not mutate position or state synchronously inside `ANIMATION_COMPLETE` handlers — in RC7, the event fires one tick later than RC6, so the next `update()` runs FIRST. Set a pending flag the update loop reads, or use `scene.time.delayedCall(0, ...)` to defer.
+
+See `skills/phaser-animation/references/state-machine-patterns.md` for the full pattern, canonical state list, and worked example.
+
 #### Tween Pattern
 
 ```typescript
@@ -432,6 +494,7 @@ Before finalizing any code, verify each of these:
 8. **TypeScript** — all properties declared with `!` non-null assertion or initialized in `create()`. Use `Phaser.Types.*` for parameter types
 9. **`input.keyboard`** — access as `this.input.keyboard!` (can be null if keyboard plugin disabled)
 10. **Body access** — `sprite.body` can be null; cast as `(sprite.body as Phaser.Physics.Arcade.Body)` or check `sprite.body?.blocked.down`
+11. **Physics update ordering** — code that positions a child sprite from a physics body's `x/y` (held weapon, shield, aim reticle, UI indicator following a physics-driven entity) must run AFTER the physics step, not during `update()`. `update()` runs before Arcade physics applies velocity and separates bodies; reading `body.x/y` there gives you last-frame's position, producing one-frame lag. Sync positions inside `scene.physics.world.on(Phaser.Physics.Arcade.Events.WORLD_STEP, syncFn)` or override `postUpdate()` on the parent entity.
 
 ## Self-Validation Checklist
 

@@ -1,7 +1,7 @@
 ---
 name: phaser-animation
 description: This skill should be used when the user asks to "create animation", "animate sprite", "add tweens", "sprite animation not playing", "character animations", "easing", "tween timeline", "idle animation", "walk animation", "fade in", "fade out", or "scale animation".
-version: 0.2.0
+version: 0.4.0
 ---
 
 # Phaser 4 Animations and Tweens
@@ -425,3 +425,4 @@ emitter.stop();
 ### Reference Files
 - **`references/animation-api.md`** — Complete AnimationManager, AnimationConfig, Animation events, TweenManager, and Timeline API reference
 - **`references/easing-reference.md`** — All built-in easing functions with descriptions, use cases, and code examples
+- **`references/state-machine-patterns.md`** — State-machine discipline for characters: `cinematicMode` flag, canonical state list, transition table, RC7 `stop()`/`play()` ordering rule, and `ANIMATION_COMPLETE` timing drift. Read when building any character with more than idle+walk, or when forced animations play for one frame and revert.

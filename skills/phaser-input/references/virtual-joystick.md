@@ -177,6 +177,16 @@ export class VirtualJoystick {
 
 ---
 
+## First-Contact Lock (default behavior of this class — preserve it)
+
+The `VirtualJoystick` class above implements the correct behavior for mobile touch controls: **the base is fixed, only the thumb follows the finger during a drag.** This is explicit in `onPointerMove` — it calls `updateDirection(pointer.x, pointer.y)` which updates the thumb position and `direction` vector, but NEVER updates `baseX` / `baseY`.
+
+If you ever see a symptom where the joystick base "jumps" or "follows the finger" as the user drags, someone added `this.baseX = pointer.x; this.baseY = pointer.y` to `onPointerMove`. That's the bug. Keep the base locked at the position established on `pointerdown`, and only the thumb moves.
+
+**Rule:** In `onPointerMove`, touch ONLY the thumb position and the `direction` vector. Never the base.
+
+---
+
 ## Optional: Floating Joystick (appears at touch position)
 
 Modify `onPointerDown` to reposition the base to where the player touches — popular in mobile games:
@@ -302,3 +312,64 @@ update(): void {
 - `pointer.id` tracking ensures that multi-touch inputs do not interfere — a second finger can be used for a fire button while the joystick tracks the first finger.
 - Call `this.input.addPointer(1)` in `create()` if you need simultaneous joystick + action button support.
 - For higher quality visuals, replace the `Graphics` circles with `Image` or `Sprite` objects using pre-rendered joystick assets.
+
+---
+
+## Cross-Scene Input: Shared-Scope Instantiation
+
+**Symptom to recognize:** the virtual joystick is visible in one gameplay scene (e.g., OverworldScene) but missing or unresponsive in another (e.g., DungeonScene), even though both scenes use the same player controls.
+
+**Root cause:** the joystick was instantiated per-gameplay-scene. Every `scene.start('NextScene')` tears down the previous scene, destroying the joystick and its pointer listeners. The new scene doesn't auto-create a joystick.
+
+**Fix — persistent InputScene:** Put the joystick in a dedicated `InputScene` that launches ONCE at game start and never stops. Gameplay scenes read joystick state from the InputScene reference.
+
+```typescript
+// src/scenes/InputScene.ts — launched once, persists across gameplay scenes
+export class InputScene extends Phaser.Scene {
+  public joystick!: VirtualJoystick;
+
+  constructor() { super({ key: 'InputScene', active: false }); }
+
+  create(): void {
+    const { height } = this.scale;
+    this.joystick = new VirtualJoystick(this, 120, height - 120);
+  }
+}
+
+// src/scenes/PreloaderScene.ts — launch InputScene before any gameplay scene starts
+create(): void {
+  this.scene.launch('InputScene');  // runs in parallel, never stops
+  this.scene.start('OverworldScene');
+}
+
+// src/scenes/OverworldScene.ts and DungeonScene.ts — read joystick state from InputScene
+update(): void {
+  const inputScene = this.scene.get('InputScene') as InputScene;
+  if (inputScene.joystick.isActive) {
+    this.player.setVelocity(
+      inputScene.joystick.direction.x * this.PLAYER_SPEED,
+      inputScene.joystick.direction.y * this.PLAYER_SPEED,
+    );
+  }
+}
+```
+
+### RC7 gotcha: use READY not CREATE for cross-scene wiring
+
+If gameplay scenes wire additional input handlers onto the InputScene (e.g., a context-specific action button), listen on the InputScene's `READY` event — NOT `CREATE`. In Phaser 4 RC7, `CREATE` fires before the target scene's input plugins are fully attached.
+
+```typescript
+// In a gameplay scene's create():
+const inputScene = this.scene.get('InputScene');
+inputScene.events.once(Phaser.Scenes.Events.READY, () => {
+  inputScene.input.keyboard!.on('keydown-E', this.interact, this);
+});
+```
+
+See `skills/phaser-migrate/references/rc6-to-rc7-changes.md` → section 7 for the full RC6 vs RC7 comparison, and `skills/phaser-scene/references/scene-patterns.md` → **Cross-Scene Input Initialization (RC7)** for the canonical reference.
+
+### Don't do this
+
+- **Don't** instantiate the joystick in every gameplay scene's `create()`. You'll lose listeners on scene transitions.
+- **Don't** store the joystick on `window` or a module global. Use the InputScene reference.
+- **Don't** stop the InputScene on scene transitions — it must stay launched for the entire session.

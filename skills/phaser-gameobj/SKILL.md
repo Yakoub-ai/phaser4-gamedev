@@ -1,7 +1,7 @@
 ---
 name: phaser-gameobj
 description: This skill should be used when the user asks to "add a sprite", "create a player", "add text to game", "create particles", "add a tilemap", "create a group", "add a container", "create game objects", "draw shapes", "add UI elements", "create a camera", "add depth", or needs to add any visual, interactive, or logical element to a Phaser 4 scene.
-version: 0.1.0
+version: 0.4.0
 ---
 
 # Phaser 4 Game Objects

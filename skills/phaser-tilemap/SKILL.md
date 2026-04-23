@@ -1,7 +1,7 @@
 ---
 name: phaser-tilemap
 description: This skill should be used when the user asks to "add tilemap", "create a level", "Tiled editor", "tile collision", "object layer", "create map", "tilemap not showing", "level design", "tile layer", "game map", "spawn point", "trigger zone", or "map collision".
-version: 0.2.0
+version: 0.4.0
 ---
 
 # Phaser 4 Tilemaps

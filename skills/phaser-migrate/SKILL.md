@@ -1,12 +1,12 @@
 ---
 name: phaser-migrate
-description: This skill should be used when the user asks to "migrate from Phaser 3", "upgrade to Phaser 4", "convert my v3 game", "Phaser 3 to 4 migration", "update Phaser version", "my Phaser 3 game broke after upgrading", or has code that uses deprecated or removed Phaser 3 APIs.
-version: 0.1.0
+description: This skill should be used when the user asks to "migrate from Phaser 3", "upgrade to Phaser 4", "convert my v3 game", "Phaser 3 to 4 migration", "update Phaser version", "my Phaser 3 game broke after upgrading", "behavior changed after RC upgrade", "RC6 to RC7 migration", or has code that uses deprecated or removed Phaser 3 APIs or behavior that silently drifted between Phaser 4 RC releases.
+version: 0.4.0
 ---
 
 # Phaser 3 → Phaser 4 Migration
 
-Migrating from Phaser 3 to Phaser 4 is mostly straightforward. The core public API is preserved. This skill covers every breaking change and how to fix it.
+Migrating from Phaser 3 to Phaser 4 is mostly straightforward. The core public API is preserved. This skill covers every breaking change and how to fix it — AND also covers RC-to-RC behavioral drift within Phaser 4 (e.g., RC6 → RC7) where APIs silently changed semantics between RC releases.
 
 ## Step 1 — Update the Package
 
@@ -250,3 +250,4 @@ Check in browser:
 
 ### Reference Files
 - **`references/v3-to-v4-changes.md`** — Complete changelog of all Phaser v3→v4 breaking changes, including renderer internals, deprecated APIs, and behavior differences
+- **`references/rc6-to-rc7-changes.md`** — Behavioral drift between Phaser 4 RC releases (masks, animations, camera, tilemap, groups, scene events, scale manager). Read when upgrading RC versions OR when code that worked in an earlier RC silently misbehaves.

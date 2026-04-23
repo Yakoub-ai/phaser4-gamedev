@@ -1,7 +1,7 @@
 ---
 name: phaser-build
 description: This skill should be used when the user asks to "build my game", "run my Phaser game", "start dev server", "deploy my game", "fix build errors", "configure Vite for Phaser", "game won't build", "TypeScript errors in Phaser", "publish to itch.io", or needs to compile, run, troubleshoot, or deploy a Phaser 4 project.
-version: 0.1.0
+version: 0.4.0
 ---
 
 # Phaser 4 Build and Deployment
@@ -240,6 +240,8 @@ npx cap open android  # Opens Android Studio
 - [ ] `npx tsc --noEmit` passes with 0 errors
 - [ ] Tested in Chrome, Firefox, and Safari
 - [ ] Mobile tested (if targeting mobile)
+
+> For a detailed performance playbook (measurement-first prompting, per-frame allocation elimination, spatial grid, audio lazy-load, atlas packing, tween leak fixes), see `skills/phaser-analyze/references/performance-playbook.md`. Use `/phaser-analyze` for a full project audit before shipping if FPS is a concern.
 
 ## Scripts
 

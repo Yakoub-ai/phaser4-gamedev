@@ -1,7 +1,7 @@
 ---
 name: phaser-ui
 description: This skill should be used when the user asks to "add health bar", "create menu", "UI elements", "dialog box", "inventory system", "create buttons", "HUD overlay", "score display", "minimap", "progress bar", "bitmap text", "interactive button", or "UI layout".
-version: 0.2.0
+version: 0.4.0
 ---
 
 # Phaser 4 UI Development
@@ -328,6 +328,8 @@ Caveat: DOM elements have z-index complications on mobile and in some browsers. 
 
 ## Responsive UI with Scale Manager
 
+> For the full canvas-plus-HUD two-layer responsive sizing rule (including the `100dvh` + live-camera pattern that avoids the iOS PWA landscape bug and the module-level `GAME_WIDTH` constant freeze), see `skills/phaser-scene/references/scene-patterns.md` → **Responsive Sizing: Two Layers**. Do not duplicate that content — it's the canonical explanation.
+
 Never hardcode pixel positions for HUD elements. Use `this.scale.width` / `this.scale.height` and listen for resize:
 
 ```typescript
@@ -395,3 +397,5 @@ See `phaser-scene` skill for the full HUDScene launch pattern and scene communic
 
 ### Reference Files
 - **`references/ui-patterns.md`** — Production-ready component classes: animated HealthBar, Button class, animated DialogBox, FloatingText, Panel, InventoryGrid
+- **`references/hit-test-and-depth.md`** — Phaser `topOnly` hit-test semantics, invisible-zone depth patterns, drag-overlay click-swallow diagnostic checklist. Read when buttons or interactive children silently stop responding.
+- **`references/panel-rebuild-patterns.md`** — In-place content rebuild for panels (tab switches, purchases) without flicker, first-visit typewriter dialogue skip pattern, chrome-preserving `container.list.slice(base)` idiom. Read when panels flash closed and reopen on content change.

@@ -48,6 +48,25 @@ When you need to verify current Phaser 4 API details, use the Context7 MCP tool:
 6. **Design module structure** — source directory layout.
 7. **Flag Phaser 4 gotchas early** — prevent users from using removed v3 APIs.
 
+## Architectural Toolkit
+
+Before designing architecture, gather the right ground truth. These are the tools every architecture session should use before proposing a scene graph or module layout.
+
+### Read the ground truth, don't guess
+
+- **If `docs/GDD.md` exists, read it in full.** It's the requirements source. If it doesn't exist and genre/scope is unclear, suggest running `/phaser-gdd` first, or ask one targeted clarifying question.
+- **If the project has existing source, read it BEFORE proposing changes.** Use Glob for `src/scenes/**/*.ts`, `src/objects/**/*.ts`, and `main.ts`. Brownfield architecture review follows a different path than greenfield — Step 1 of this document covers both.
+- **Context7 MCP for Phaser API boundaries.** When genre-specific features lean on less-common Phaser subsystems (complex Matter constraints, custom shaders, multi-camera render pipelines, Spine integration), call `resolve-library-id "phaser"` + `query-docs` to confirm what's idiomatic in Phaser 4 RC7 specifically.
+
+### Think in phases, not files
+
+- Architecture output is a **phased plan**, not a file list. Each phase delivers a working, testable slice (Phase 1: main menu + one gameplay scene stub; Phase 2: physics + player; Phase 3: enemies + combat; Phase 4: UI polish). This lets the implementation run `npx tsc --noEmit` and smoke-test between phases instead of at the end.
+- **Define shared types first.** `src/types/scene-keys.ts`, `src/types/event-names.ts`, `src/types/registry-keys.ts` — these go in Phase 0 or early Phase 1, before any scene implementation. Without them, parallel implementation work collides on names.
+
+### Decide decisively; avoid option paralysis
+
+The user is building a game, not comparing options. Recommend ONE approach with a one-line rationale; mention alternatives only when trade-offs genuinely matter (e.g., Arcade vs Matter physics). Endless "option A vs B vs C" trees burn tokens and decide nothing.
+
 ## Architecture Design Process
 
 ### Step 1 — Understand the Game
@@ -157,6 +176,24 @@ this.game.events.on('globalEvent', handler);
 
 **Avoid:** Sharing mutable state via module globals. Avoid `window.*` for game state.
 
+### Registry Centralization Discipline
+
+When two or more scenes run in parallel (any use of `scene.launch()` — HUDScene, PauseScene, BackgroundScene, a persistent InputScene, a modal overlay scene, a minimap scene), each scene owns its own view of shared state. If parallel scenes keep local copies of progression data (score, level, inventory, player stats, timers), those copies diverge silently — one scene receives an update, the other doesn't, and the bug surfaces only after the player notices the mismatch.
+
+Centralize shared state in the Registry BEFORE launching any parallel scene. The Registry (`this.registry`) is game-level, shared by every active scene; `registry.events` provides change notifications without scene-to-scene coupling.
+
+**Rules:**
+
+1. **Define the Registry schema before Step 6.** Create `src/types/registry-keys.ts` with an enum of every Registry key used by the game, and a typed `GameRegistry` wrapper (see `skills/phaser-scene/references/scene-patterns.md` → Registry Patterns for the canonical shape). Doing this up front forces you to decide what state belongs at game level vs scene level.
+2. **Parallel scenes must read and write only via Registry or scene events** — never cache a direct reference to another scene's instance properties. Direct references bind the two scenes' lifecycles and produce hard-to-trace state divergence on scene restart.
+3. **Module-level `GAME_WIDTH` / `GAME_HEIGHT` constants are forbidden for sizing overlays, HUD containers, or scene backdrops.** Constants freeze at import time; any scene that grows (CSS resize, orientation change, full-screen toggle, safe-area inset release on mobile) outgrows them. Use `this.cameras.main.width/height` inside `create()` + a `this.scale.on('resize', listener)` registered in `create()` and removed in `shutdown()`. See `skills/phaser-scene/references/scene-patterns.md` → **Responsive Sizing: Two Layers**.
+
+**When the Registry is the wrong tool:**
+
+- **Per-scene ephemeral state** (the enemies currently alive in this wave, the current projectile pool) belongs on the scene, not in the Registry. Registry is for state that crosses scene boundaries.
+- **High-frequency values** (player position every frame) should NOT go through Registry — its `changedata` events fire on every write, and 60 writes/sec × N listeners is wasteful. Use scene events or direct reads for hot values.
+- **Save-critical persistent state** (unlocked characters, high scores, settings) goes through Registry AND a serializer that writes to `localStorage` / `IndexedDB` — see `skills/phaser-saveload`.
+
 ### Step 5 — Asset Pipeline
 
 Recommended directory:
@@ -226,6 +263,8 @@ When planning implementation phases that will use parallel agents:
 2. **Specify property names explicitly** — In the architecture document, list exact property names for each game object (e.g., Player.speed, Player.jumpPower, not vague descriptions).
 3. **Pin asset keys** — List every asset key that will be used, so all scenes reference consistent keys.
 4. **Build verification gate** — After each implementation phase, run `npx tsc --noEmit` before proceeding to the next phase.
+5. **Registry schema frozen before parallel scenes** — every scene launched via `scene.launch()` (not `scene.start()`) must read and write shared state via Registry or scene events, never via module globals or a direct scene-ref cache. See the Registry Centralization Discipline section above.
+6. **Question-first when ambiguous** — if the user's request is unclear on genre, scope, platform target, or technical constraints, ask ONE focused clarifying question (via `AskUserQuestion` if available) before designing. A wrong architecture built fast costs more than a right architecture built after a short clarifier.
 
 ## Output Format
 
