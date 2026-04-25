@@ -1,0 +1,38 @@
+{
+  "name": "phaser4-gamedev",
+  "version": "0.4.0",
+  "description": "Phaser 4 game development toolkit with portable skills for scaffolding, architecture, coding, debugging, assets, physics, migration, UI, build, and analysis.",
+  "homepage": "https://github.com/Yakoub-ai/phaser4-gamedev",
+  "repository": "https://github.com/Yakoub-ai/phaser4-gamedev",
+  "author": {
+    "name": "george"
+  },
+  "license": "MIT",
+  "keywords": [
+    "phaser",
+    "phaser4",
+    "gamedev",
+    "game-development",
+    "webgl",
+    "typescript",
+    "2d-games"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Phaser 4 GameDev",
+    "shortDescription": "Build, debug, and ship Phaser 4 games with Codex skills.",
+    "longDescription": "A Phaser 4 game development toolkit for Codex and compatible coding agents. Includes portable skills for project initialization, scene design, game objects, physics, Matter.js, input, audio, animation, UI, tilemaps, mobile, save/load, migration, GDD generation, brownfield analysis, architecture, implementation, debugging, and asset pipeline work.",
+    "developerName": "george",
+    "category": "Development",
+    "capabilities": [
+      "Write"
+    ],
+    "websiteURL": "https://github.com/Yakoub-ai/phaser4-gamedev",
+    "defaultPrompt": [
+      "Create a Phaser 4 platformer with TypeScript.",
+      "Debug my Phaser 4 black screen issue.",
+      "Plan the architecture for my Phaser game."
+    ],
+    "brandColor": "#1D4ED8"
+  }
+}

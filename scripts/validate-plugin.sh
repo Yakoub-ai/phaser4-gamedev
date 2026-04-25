@@ -26,7 +26,7 @@ echo "Plugin root: $PLUGIN_DIR"
 echo ""
 
 # ── Manifest ──────────────────────────────────────────────────────────────────
-info "Plugin manifest..."
+info "Plugin manifests..."
 if [[ -f "$PLUGIN_DIR/.claude-plugin/plugin.json" ]]; then
   ok ".claude-plugin/plugin.json exists"
   NAME=$(node -e "console.log(require('$PLUGIN_DIR/.claude-plugin/plugin.json').name)" 2>/dev/null || echo "")
@@ -37,6 +37,23 @@ if [[ -f "$PLUGIN_DIR/.claude-plugin/plugin.json" ]]; then
   fi
 else
   error ".claude-plugin/plugin.json missing"
+fi
+if [[ -f "$PLUGIN_DIR/.codex-plugin/plugin.json" ]]; then
+  ok ".codex-plugin/plugin.json exists"
+  CODEX_NAME=$(node -e "console.log(require('$PLUGIN_DIR/.codex-plugin/plugin.json').name)" 2>/dev/null || echo "")
+  CODEX_SKILLS=$(node -e "console.log(require('$PLUGIN_DIR/.codex-plugin/plugin.json').skills)" 2>/dev/null || echo "")
+  if [[ "$CODEX_NAME" == "phaser4-gamedev" ]]; then
+    ok "Codex plugin name: $CODEX_NAME"
+  else
+    error "Codex plugin name mismatch: expected 'phaser4-gamedev', got '$CODEX_NAME'"
+  fi
+  if [[ "$CODEX_SKILLS" == "./skills/" ]]; then
+    ok "Codex plugin skills path: $CODEX_SKILLS"
+  else
+    error "Codex plugin skills path mismatch: expected './skills/', got '$CODEX_SKILLS'"
+  fi
+else
+  error ".codex-plugin/plugin.json missing"
 fi
 echo ""
 
@@ -119,7 +136,7 @@ echo ""
 
 # ── Skills ────────────────────────────────────────────────────────────────────
 info "Skills..."
-REQUIRED_SKILLS=("phaser-init" "phaser-scene" "phaser-gameobj" "phaser-physics" "phaser-build" "phaser-migrate" "phaser-audio" "phaser-animation" "phaser-input" "phaser-tilemap" "phaser-ui" "phaser-matter" "phaser-saveload" "phaser-mobile" "phaser-gdd" "phaser-analyze")
+REQUIRED_SKILLS=("phaser-init" "phaser-architect" "phaser-coder" "phaser-debugger" "phaser-asset-advisor" "phaser-scene" "phaser-gameobj" "phaser-physics" "phaser-build" "phaser-migrate" "phaser-audio" "phaser-animation" "phaser-input" "phaser-tilemap" "phaser-ui" "phaser-matter" "phaser-saveload" "phaser-mobile" "phaser-gdd" "phaser-analyze")
 for skill in "${REQUIRED_SKILLS[@]}"; do
   SKILL_DIR="$PLUGIN_DIR/skills/$skill"
   if [[ -d "$SKILL_DIR" ]]; then
@@ -226,7 +243,7 @@ echo ""
 # ── Summary ───────────────────────────────────────────────────────────────────
 echo "=================================="
 echo "Agents: 4 required"
-echo "Skills: 16 required"
+echo "Skills: 20 required"
 echo "Commands: 6 required"
 echo ""
 if [[ "$ERRORS" -eq 0 && "$WARNINGS" -eq 0 ]]; then

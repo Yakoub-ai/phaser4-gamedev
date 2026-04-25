@@ -1,13 +1,13 @@
 # phaser4-gamedev
 
-A Claude Code plugin that makes building [Phaser 4](https://phaser.io) web games fast and easy. It ships **4 specialized agents**, **16 slash-command skills**, **6 commands**, and **2 hooks** that encode deep Phaser 4 (v4.0.0-rc.7) knowledge — so you can build any 2D web game without needing to memorize the API.
+A portable agent-skills package and Claude Code plugin that makes building [Phaser 4](https://phaser.io) web games fast and easy. It ships **20 portable skills**, **4 Claude Code subagents**, **6 Claude slash commands**, and **2 Claude hooks** that encode deep Phaser 4 (v4.0.0-rc.7) knowledge — so you can build any 2D web game without needing to memorize the API.
 
 ## Features
 
-- **4 Agents** — specialized subagents for architecture, coding, debugging, and asset management
-- **16 Skills** — slash commands covering the full game development lifecycle
-- **6 Commands** — `/phaser-new`, `/phaser-run`, `/phaser-validate`, `/phaser-build`, `/phaser-gdd`, `/phaser-analyze`
-- **2 Hooks** — PreToolUse v3 API guard (catches deprecated APIs before code is saved) + SessionStart Phaser project detector
+- **20 Portable Skills** — installable with `npx skills add` for Codex, Claude Code, Cursor, OpenCode, and other compatible coding agents
+- **4 Claude Code Agents** — specialized subagents for architecture, coding, debugging, and asset management
+- **6 Claude Commands** — `/phaser-new`, `/phaser-run`, `/phaser-validate`, `/phaser-build`, `/phaser-gdd`, `/phaser-analyze`
+- **2 Claude Hooks** — PreToolUse v3 API guard (catches deprecated APIs before code is saved) + SessionStart Phaser project detector
 - **9 Game Archetypes** — platformer, top-down RPG, space shooter, match-3 puzzle, tower defense, endless runner, card game, fighting game, racing — full specs with `/phaser-new`
 - **Game Design Documents** — generate comprehensive 12-section GDDs with `/phaser-gdd`
 - **Project Analysis** — analyze existing projects for architecture, performance, and code quality with `/phaser-analyze`
@@ -21,15 +21,69 @@ A Claude Code plugin that makes building [Phaser 4](https://phaser.io) web games
 
 ## Installation
 
-### Prerequisites
+Choose the install path based on what you want:
+
+| Install path | Best for | Installs |
+|---|---|---|
+| **skills.sh / `npx skills`** | Codex, Cursor, OpenCode, Claude Code standalone skills, and other Agent Skills-compatible tools | Portable `skills/*/SKILL.md` only |
+| **Claude Code plugin** | Claude Code users who want the full plugin experience | Skills, Claude subagents, slash commands, and hooks |
+
+The portable skills and Claude plugin can coexist. Use the skills.sh path for cross-agent portability; use the Claude Code plugin path when you specifically want Claude Code commands, agents, and hooks.
+
+### skills.sh / Agent Skills
+
+This repository is compatible with the open Agent Skills CLI that powers [skills.sh](https://skills.sh). The CLI discovers every `SKILL.md` under `skills/`, so the Phaser toolkit can be installed directly into Codex or any supported coding agent.
+
+List the available skills:
+
+```bash
+npx skills add Yakoub-ai/phaser4-gamedev --list
+```
+
+Install all Phaser skills into Codex globally:
+
+```bash
+npx skills add Yakoub-ai/phaser4-gamedev --skill '*' --agent codex --global
+```
+
+Install all Phaser skills into Claude Code as standalone Agent Skills:
+
+```bash
+npx skills add Yakoub-ai/phaser4-gamedev --skill '*' --agent claude-code --global
+```
+
+Install all Phaser skills into every supported agent:
+
+```bash
+npx skills add Yakoub-ai/phaser4-gamedev --all
+```
+
+Restart your coding agent after installing so it reloads its skills directory. For Codex global installs, the target skills directory is `~/.codex/skills/`.
+
+The portable skills include the original lifecycle skills plus portable equivalents of the Claude subagents:
+
+- `phaser-architect`
+- `phaser-coder`
+- `phaser-debugger`
+- `phaser-asset-advisor`
+
+The repository also includes `.codex-plugin/plugin.json` with `skills: "./skills/"` for Codex plugin discovery.
+
+To make this repository discoverable/installable through skills.sh-compatible tooling, keep the `skills/<skill-name>/SKILL.md` structure valid and publish the repository. There is no `skills.sh` file to edit in this repo; users install from the GitHub repo with `npx skills add Yakoub-ai/phaser4-gamedev`.
+
+### Claude Code plugin
+
+Use this path when you want the complete Claude Code integration: plugin-scoped skills, subagents, slash commands, and hooks.
+
+#### Prerequisites
 
 - [Claude Code](https://claude.ai/code) CLI installed and authenticated
 
-### Optional: Context7 MCP Server
+#### Optional: Context7 MCP Server
 
 The plugin's agents reference [Context7](https://github.com/upstash/context7) for live Phaser 4 API verification. While agents work without it (they have extensive built-in Phaser 4 knowledge), installing Context7 enables real-time API lookups for edge cases during the RC phase.
 
-### Method 1: Interactive (recommended)
+#### Method 1: Interactive (recommended)
 
 Inside a Claude Code session, run these two slash commands:
 
@@ -38,7 +92,7 @@ Inside a Claude Code session, run these two slash commands:
 /plugin install phaser4-gamedev@phaser4-gamedev
 ```
 
-When prompted, choose your preferred scope:
+When prompted, choose your preferred scope. Claude Code plugin scopes map to these settings files:
 
 | Scope | Settings file | When to use |
 |---|---|---|
@@ -46,15 +100,9 @@ When prompted, choose your preferred scope:
 | **Project** | `.claude/settings.json` | Share with your team (commit this file) |
 | **Local** | `.claude/settings.local.json` | Personal override in a shared repo |
 
-If Claude Code was already running, reload the plugin:
+Restart Claude Code after installing so the plugin is loaded from Claude's plugin cache.
 
-```
-/reload-plugins
-```
-
----
-
-### Method 2: Manual `settings.json` configuration
+#### Method 2: Manual Claude Code settings
 
 Add two entries to your settings file directly.
 
@@ -98,21 +146,34 @@ Then start (or restart) Claude Code — the plugin loads automatically.
 
 ---
 
-### Verify the installation
+#### Method 3: Claude Code CLI
 
-```
-/plugin list
+Claude Code also supports non-interactive plugin management from the shell:
+
+```bash
+claude plugin marketplace add Yakoub-ai/phaser4-gamedev
+claude plugin install phaser4-gamedev@phaser4-gamedev --scope user
 ```
 
-You should see `phaser4-gamedev` in the list. Test a skill:
-
-```
-/phaser-init
-```
+Use `--scope project` instead of `--scope user` when you want to write the plugin install to `.claude/settings.json` for a shared repository.
 
 ---
 
-## Agents
+#### Verify the installation
+
+```
+/plugin
+```
+
+You should see `phaser4-gamedev` in the installed plugins list. Then verify the Claude Code plugin features you need:
+
+- Run `/help` and confirm the Phaser slash commands are present.
+- Check `/agents` for the Phaser subagents.
+- Test a command such as `/phaser-new` or `/phaser-gdd`.
+
+---
+
+## Claude Code Agents
 
 Agents are autonomous subagents that Claude Code launches automatically based on your request. You never need to call them by name.
 
@@ -399,7 +460,7 @@ Generates a comprehensive 12-section Game Design Document: game overview, core l
 
 ---
 
-## Commands
+## Claude Code Commands
 
 | Command | Description |
 |---|---|
@@ -412,7 +473,7 @@ Generates a comprehensive 12-section Game Design Document: game overview, core l
 
 ---
 
-## Hooks
+## Claude Code Hooks
 
 | Hook | Event | Purpose |
 |---|---|---|
@@ -457,6 +518,8 @@ phaser4-gamedev/
 ├── .claude-plugin/
 │   ├── plugin.json
 │   └── marketplace.json
+├── .codex-plugin/
+│   └── plugin.json
 ├── agents/
 │   ├── phaser-architect.md      (opus)
 │   ├── phaser-coder.md          (sonnet)
@@ -476,6 +539,10 @@ phaser4-gamedev/
 │       └── detect-phaser.sh
 ├── skills/
 │   ├── phaser-init/         scaffolding + 9 game archetypes
+│   ├── phaser-architect/    portable architecture planning skill
+│   ├── phaser-coder/        portable implementation skill
+│   ├── phaser-debugger/     portable debugging skill
+│   ├── phaser-asset-advisor/ portable asset pipeline skill
 │   ├── phaser-scene/        scene creation and transitions
 │   ├── phaser-gameobj/      sprites, text, particles, containers
 │   ├── phaser-physics/      Arcade Physics + multiplayer patterns
