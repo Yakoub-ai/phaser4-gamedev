@@ -1,7 +1,7 @@
 ---
 name: phaser-scene
 description: This skill should be used when the user asks to "create a scene", "add a new scene", "make a menu scene", "create a game over screen", "add a level", "set up scene transitions", "create a pause screen", "add a preloader", "create a HUD overlay", or needs any Phaser 4 scene created, structured, or connected to other scenes.
-version: 0.4.0
+version: 0.5.0
 ---
 
 # Phaser 4 Scene Creation
@@ -33,6 +33,11 @@ export class MyScene extends Phaser.Scene {
 
   // Called every frame. Keep lean — call helper methods
   update(time: number, delta: number): void { }
+
+  // Called when scene is about to be stopped or replaced. Clean up here.
+  shutdown(): void {
+    // Remove event listeners; stop sounds; clear tracked timers
+  }
 }
 ```
 
@@ -286,6 +291,56 @@ this.scene.get('GameScene').events.on('enemyKilled', (data: {points: number}) =>
 // 3. Direct scene reference (use sparingly — creates tight coupling)
 const gameScene = this.scene.get('GameScene') as GameScene;
 gameScene.addScore(100);
+```
+
+## Defensive Scene Shutdown
+
+Scene teardown is the most common source of runtime crashes in Phaser 4. `physics`, `tweens`, and camera-owned objects can be null during shutdown, especially in overlay scenes stopped while still mid-tween.
+
+### Timer Tracking Pattern
+
+Anonymous `time.addEvent()` calls accumulate and never clean up on scene restart. Track every timer:
+
+```typescript
+export class GameScene extends Phaser.Scene {
+  private activeTimers: Phaser.Time.TimerEvent[] = [];
+
+  // Use this instead of this.time.addEvent() directly
+  private addTimer(cfg: Phaser.Types.Time.TimerEventConfig): Phaser.Time.TimerEvent {
+    const t = this.time.addEvent(cfg);
+    this.activeTimers.push(t);
+    return t;
+  }
+
+  shutdown(): void {
+    for (const t of this.activeTimers) t.remove(false);
+    this.activeTimers = [];
+    this.bgMusic?.stop();
+  }
+}
+```
+
+### Overlay Scene Sizing
+
+Overlay scenes (PauseScene, dialog panels) must size their full-screen backdrops from `this.cameras.main.width/height`, **not** from module-level constants. Constants are frozen at boot time; camera dimensions update with the live viewport. A backdrop sized from a constant will be wrong after any canvas resize.
+
+```typescript
+// BAD — constant freezes at boot-time dimensions:
+const GAME_W = 800;
+this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x000000, 0.5);
+
+// CORRECT — reads live dimensions:
+const { width, height } = this.cameras.main;
+this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.5);
+```
+
+Also add a resize listener if the overlay can remain open while the window resizes:
+
+```typescript
+this.scale.on('resize', (size: Phaser.Structs.Size) => {
+  this.backdrop.setPosition(size.width / 2, size.height / 2);
+  this.backdrop.setSize(size.width, size.height);
+});
 ```
 
 ## Additional Resources

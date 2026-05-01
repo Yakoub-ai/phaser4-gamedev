@@ -1,7 +1,7 @@
 ---
 name: phaser-audio
 description: This skill should be used when the user asks to "add sound", "play music", "audio not working", "add background music", "sound effects", "mute button", "audio sprite", "game audio", "play sound effect", or "music won't play".
-version: 0.4.0
+version: 0.5.0
 ---
 
 # Phaser 4 Audio
@@ -264,6 +264,46 @@ create(): void {
   }
 }
 ```
+
+## AudioContext Suspension Recovery
+
+Mobile browsers (especially iOS Safari) and some desktop browsers suspend the `AudioContext` when the tab loses focus, the device sleeps, or the PWA is backgrounded. Unlike the initial autoplay lock, resumption is NOT automatic — Phaser does not restore a suspended context on tab re-focus.
+
+**Symptoms:** Music stops abruptly when the user switches tabs and returns. No error in console. `this.sound.locked` is `false` (context was unlocked previously) but audio is still silent.
+
+**Fix — resume the context on visibility change:**
+
+```typescript
+// In PreloaderScene.create() or main.ts, after game is initialized:
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    const mgr = this.sound as Phaser.Sound.WebAudioSoundManager;
+    if (mgr.context?.state === 'suspended') {
+      mgr.context.resume();
+    }
+  }
+});
+```
+
+**Alternative — use Phaser's built-in focus event:**
+
+```typescript
+this.game.events.on(Phaser.Core.Events.FOCUS, () => {
+  const mgr = this.sound as Phaser.Sound.WebAudioSoundManager;
+  if (mgr.context?.state === 'suspended') {
+    mgr.context.resume();
+  }
+});
+```
+
+Check `mgr.context?.state` before calling `resume()` — calling it when already `'running'` is a no-op, but calling it when `'closed'` throws.
+
+**AudioContext states:**
+| State | Meaning |
+|---|---|
+| `'running'` | Audio playing normally |
+| `'suspended'` | Paused (tab hidden, device sleep) — call `resume()` |
+| `'closed'` | Permanently closed — create a new game instance |
 
 ## Crossfading Music Between Scenes
 

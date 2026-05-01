@@ -1,7 +1,7 @@
 ---
 name: phaser-animation
 description: This skill should be used when the user asks to "create animation", "animate sprite", "add tweens", "sprite animation not playing", "character animations", "easing", "tween timeline", "idle animation", "walk animation", "fade in", "fade out", or "scale animation".
-version: 0.4.0
+version: 0.5.0
 ---
 
 # Phaser 4 Animations and Tweens
@@ -250,6 +250,51 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 }
 ```
+
+### Forced Animations: Cinematic Mode
+
+When a one-shot animation (boss intro, death sequence, dungeon entry) plays for **one frame then reverts** to idle, the cause is always the entity's `update()` running its state-machine logic one tick after your forced `play()` call and overwriting it.
+
+**Fix — add a `cinematicMode` flag as the very first guard in `update()`:**
+
+```typescript
+export class Player extends Phaser.Physics.Arcade.Sprite {
+  private state: CharState = 'idle';
+  private cinematicMode = false;
+
+  setCinematicMode(active: boolean, forcedAnimKey?: string): void {
+    this.cinematicMode = active;
+    if (active && forcedAnimKey) {
+      this.anims.stop();          // RC7: always stop before play on state switch
+      this.play(forcedAnimKey, true);
+      this.once(
+        Phaser.Animations.Events.ANIMATION_COMPLETE_KEY + forcedAnimKey,
+        () => { this.cinematicMode = false; }
+      );
+    }
+  }
+
+  update(cursors: Phaser.Types.Input.Keyboard.CursorKeys): void {
+    if (this.cinematicMode) return;  // MUST be first line — blocks state logic
+    // ... rest of state machine
+  }
+}
+```
+
+Clear `cinematicMode` in the `ANIMATION_COMPLETE_KEY` handler, not synchronously after `play()` — in RC7 the completion event fires one tick after the last frame renders. Clear it synchronously and your forced animation exits one frame early.
+
+See `references/state-machine-patterns.md` for the full canonical implementation, worked dungeon-entry example, and the RC7 `ANIMATION_COMPLETE` timing-drift fix.
+
+### State Transition Completeness
+
+Adding a new animation state without auditing **all** other states' transition lists is a silent bug — no error is thrown; the state machine simply fails to reach the new state or gets stuck in the wrong one.
+
+When adding any new state (e.g. `'dodge'`, `'interact'`):
+1. Add it to the `CharState` union type.
+2. Add a `case` for it in `setState()`.
+3. Update every other state's "what can interrupt me" logic to include or exclude the new state as appropriate.
+
+The transition table in `references/state-machine-patterns.md` makes missing transitions obvious on read.
 
 ## Stopping and Pausing Animations
 

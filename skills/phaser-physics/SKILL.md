@@ -1,7 +1,7 @@
 ---
 name: phaser-physics
 description: This skill should be used when the user asks to "add physics", "set up collisions", "implement gravity", "create a platformer", "add physics to sprite", "detect overlaps", "create collision groups", "make objects bounce", "top-down movement", "set velocity", "apply forces", "enable arcade physics", or needs any Arcade Physics configuration in Phaser 4.
-version: 0.4.0
+version: 0.5.0
 ---
 
 # Phaser 4 Arcade Physics
@@ -285,6 +285,48 @@ const dist = Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y);
 // Angle from one object to another (degrees)
 const angle = Phaser.Math.Angle.Between(a.x, a.y, b.x, b.y) * (180 / Math.PI);
 ```
+
+## Timer Tracking and Cleanup
+
+Timers created with `this.time.addEvent()` for recurring AI patterns, ability cooldowns, or boss phase transitions accumulate and never self-clean across scene restarts. Store every timer reference and remove them in `shutdown()` (or the equivalent entity cleanup).
+
+```typescript
+// In your entity class:
+private activeTimers: Phaser.Time.TimerEvent[] = [];
+
+startBossPhase(): void {
+  const t = this.scene.time.addEvent({
+    delay: 3000,
+    loop: true,
+    callback: this.fireVolley,
+    callbackScope: this,
+  });
+  this.activeTimers.push(t);
+}
+
+destroy(fromScene?: boolean): void {
+  for (const t of this.activeTimers) t.remove(false);
+  this.activeTimers = [];
+  super.destroy(fromScene);
+}
+```
+
+**Rule:** Every `time.addEvent` call in an entity must have a corresponding `t.remove()` in `destroy()` or `shutdown()`. Anonymous fire-and-forget timers on looping entities are the fastest path to a timer leak.
+
+## Physics Group Lifecycle
+
+Physics groups created for weapon evolutions, temporary spawn waves, or ability effects must be explicitly destroyed when the context ends. Stopping the parent scene does NOT automatically destroy child groups that were created dynamically.
+
+```typescript
+// When creating a group for a weapon or phase effect:
+const projectileGroup = this.physics.add.group({ classType: MyProjectile, maxSize: 20 });
+
+// When that weapon is replaced or the phase ends:
+projectileGroup.clear(true, true);  // destroyChild=true, removeFromScene=true
+projectileGroup.destroy();
+```
+
+Call `clear(true, true)` before `destroy()`. Without it, the children remain in the scene's display list as orphaned objects.
 
 ## Debug Mode
 

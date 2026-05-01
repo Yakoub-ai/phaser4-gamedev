@@ -1,7 +1,7 @@
 ---
 name: phaser-migrate
 description: This skill should be used when the user asks to "migrate from Phaser 3", "upgrade to Phaser 4", "convert my v3 game", "Phaser 3 to 4 migration", "update Phaser version", "my Phaser 3 game broke after upgrading", "behavior changed after RC upgrade", "RC6 to RC7 migration", or has code that uses deprecated or removed Phaser 3 APIs or behavior that silently drifted between Phaser 4 RC releases.
-version: 0.4.0
+version: 0.5.0
 ---
 
 # Phaser 3 → Phaser 4 Migration
@@ -53,6 +53,9 @@ grep -rn "spine\|Spine" src/ -i
 
 # 9. phaser-ie9 entry point
 grep -rn "phaser-ie9" . 
+
+# 10. WebGL geometry masks (stencil-based masks changed in Phaser 4 — use scissor/viewport instead)
+grep -rn "createGeometryMask\|setBitmapMask\|setMask\b\|clearMask" src/ 
 ```
 
 ## Step 3 — Apply Fixes
@@ -197,6 +200,29 @@ import Phaser from 'phaser/src/phaser-ie9.js';
 import Phaser from 'phaser';
 ```
 
+### Fix 9: WebGL Geometry Masks → Scissor / Viewport Clipping
+
+Phaser 4 changed how WebGL masks work. Stencil-buffer geometry masks from v3 either silently no-op or produce incorrect results in v4's Beam renderer. Camera viewport clipping is the correct replacement for rectangular clip regions.
+
+```typescript
+// BEFORE (Phaser 3) — geometry mask via stencil buffer
+const shape = this.add.graphics().fillRect(x, y, w, h);
+const mask = shape.createGeometryMask();
+targetSprite.setMask(mask);
+
+// AFTER (Phaser 4) — use camera viewport for rectangular clips
+// For the main camera:
+this.cameras.main.setViewport(x, y, w, h);
+// Restore to full canvas:
+const { width, height } = this.scale;
+this.cameras.main.setViewport(0, 0, width, height);
+
+// For non-rectangular clips, use a custom render pipeline instead (advanced).
+// Bitmap masks on sprites still work; geometry masks do not.
+```
+
+If you need a mask on a non-camera object (e.g. a sprite with a custom clip region), use a bitmap mask with a Graphics texture rather than a geometry mask.
+
 ## Step 4 — Update TypeScript Config
 
 If using TypeScript, ensure `tsconfig.json` is correct for v4:
@@ -243,6 +269,7 @@ Check in browser:
 - [ ] `TileSprite.setCrop()` calls replaced or removed
 - [ ] `Phaser.Create.GenerateTexture` replaced with Graphics/textures
 - [ ] `phaser-ie9` imports replaced with `phaser`
+- [ ] WebGL geometry masks (`createGeometryMask` / `setMask`) replaced with camera viewport or bitmap masks
 - [ ] `npx tsc --noEmit` passes
 - [ ] Game runs in browser without console errors
 

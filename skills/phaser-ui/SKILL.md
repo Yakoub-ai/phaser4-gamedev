@@ -1,7 +1,7 @@
 ---
 name: phaser-ui
 description: This skill should be used when the user asks to "add health bar", "create menu", "UI elements", "dialog box", "inventory system", "create buttons", "HUD overlay", "score display", "minimap", "progress bar", "bitmap text", "interactive button", or "UI layout".
-version: 0.4.0
+version: 0.5.0
 ---
 
 # Phaser 4 UI Development
@@ -348,6 +348,25 @@ create(): void {
 }
 ```
 
+### Two Independent Sizing Layers
+
+Phaser UI has two separate sizing concerns that must not be mixed:
+
+1. **Canvas scale** — handled by `ScaleManager` (`this.scale.width/height`). Controls how the game canvas maps to the browser window.
+2. **HUD / overlay positions** — must come from `this.cameras.main.width/height` at creation time (and update on resize). **Never use module-level constants** (`const GAME_W = 800`) for HUD positions — they freeze at the value from boot and don't adapt to canvas resize.
+
+```typescript
+// BAD — module-level constant freezes at boot dimensions:
+const OVERLAY_W = 1280;
+backdrop.setSize(OVERLAY_W, OVERLAY_H);
+
+// CORRECT — read from live camera:
+const { width, height } = this.cameras.main;
+backdrop.setSize(width, height);
+```
+
+When a HUDScene is a parallel overlay, its camera is independent from the GameScene camera. HUD positions read from `this.cameras.main` in the HUDScene always reflect the HUD camera's current viewport — correct even after window resize.
+
 ---
 
 ## HUD as Parallel Scene (recommended for complex UIs)
@@ -392,6 +411,19 @@ export class HUDScene extends Phaser.Scene {
 See `phaser-scene` skill for the full HUDScene launch pattern and scene communication options.
 
 ---
+
+## Drag Overlay Event Swallowing
+
+Full-viewport invisible zones used for swipe detection or drag-to-dismiss will **silently swallow all pointer events** if placed at a higher depth than your buttons. Phaser's default `topOnly` hit-test routes the event exclusively to the highest-depth interactive at that point.
+
+**Diagnosis:** `this.input.enableDebug(overlayZone)` — if the debug outline covers the full viewport and its depth > your button depths, this is the cause.
+
+**Fixes (in order of preference):**
+1. `overlayZone.setDepth(-9999)` — place the zone behind all interactives.
+2. Destroy the overlay zone while interactive panels are open; recreate on close.
+3. `this.input.setTopOnly(false)` in this scene only — allows all overlapping interactives to receive the event (watch for double-fire on other scenes).
+
+See `references/hit-test-and-depth.md` for complete depth and topOnly semantics.
 
 ## Additional Resources
 
