@@ -24,7 +24,24 @@ Build the Phaser 4 game for production deployment.
    - List the main output files
    - Note if the total size is large (>20MB warns, >50MB is a concern for web games)
 
-5. **Deployment options** — After a successful build, remind the user of deployment targets:
+5. **Verify the built game actually runs — before recommending deployment:**
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-playtest/scripts/playtest.mjs" --project . --mode build
+   ```
+
+   A successful `npm run build` only means the bundler finished. It does not mean the
+   bundle works. This step is where the deploy-breaking bugs surface — the ones that
+   never appear in dev:
+   - wrong `base` in `vite.config.ts` → every asset 404s on itch.io and GitHub Pages
+   - assets referenced from `src/` that were never copied into `dist/`
+   - minification breaking code that relies on class or function `.name`
+   - a scene tree-shaken away because it is only referenced dynamically
+
+   If it fails, **do not proceed to deployment advice.** Report the failures and fix
+   them first. If Playwright is unavailable, say explicitly that the production bundle
+   was built but not verified.
+
+6. **Deployment options** — After a successful *and verified* build, remind the user of deployment targets:
    - **itch.io**: Zip the `dist/` folder and upload as HTML game. Set "Kind of project" to "HTML".
    - **GitHub Pages**: Push to a `gh-pages` branch or use GitHub Actions (see phaser-build skill for the workflow YAML).
    - **Netlify/Vercel**: Connect the repo and set build command to `npm run build`, output directory to `dist`.

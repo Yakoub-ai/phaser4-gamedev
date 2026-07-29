@@ -1,7 +1,7 @@
 ---
 name: phaser-animation
 description: This skill should be used when the user asks to "create animation", "animate sprite", "add tweens", "sprite animation not playing", "character animations", "easing", "tween timeline", "idle animation", "walk animation", "fade in", "fade out", or "scale animation".
-version: 0.5.0
+version: 0.6.0
 ---
 
 # Phaser 4 Animations and Tweens

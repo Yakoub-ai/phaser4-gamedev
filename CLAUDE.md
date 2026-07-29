@@ -3,21 +3,40 @@
 ## Repo Structure
 
 ```
-agents/          — 4 specialized subagent definitions (Markdown with YAML frontmatter)
-                   phaser-architect, phaser-coder, phaser-debugger, phaser-asset-advisor
-commands/        — Slash command definitions (6 commands)
-                   phaser-new, phaser-run, phaser-validate, phaser-build, phaser-gdd, phaser-analyze
+agents/          — 5 specialized subagent definitions (Markdown with YAML frontmatter)
+                   phaser-architect, phaser-coder, phaser-debugger,
+                   phaser-asset-advisor, phaser-playtester
+commands/        — Slash command definitions (7 commands)
+                   phaser-new, phaser-run, phaser-playtest, phaser-validate,
+                   phaser-build, phaser-gdd, phaser-analyze
 skills/          — Each skill has SKILL.md + references/ + optional examples/ and scripts/
-                   16 skills: phaser-init, phaser-scene, phaser-gameobj, phaser-physics,
-                   phaser-audio, phaser-animation, phaser-input, phaser-tilemap,
-                   phaser-ui, phaser-build, phaser-migrate, phaser-matter,
-                   phaser-saveload, phaser-mobile, phaser-gdd, phaser-analyze
+                   21 skills: 16 lifecycle/system skills (phaser-init, phaser-scene,
+                   phaser-gameobj, phaser-physics, phaser-audio, phaser-animation,
+                   phaser-input, phaser-tilemap, phaser-ui, phaser-build, phaser-migrate,
+                   phaser-matter, phaser-saveload, phaser-mobile, phaser-gdd,
+                   phaser-analyze), phaser-playtest (runtime verification), and 4
+                   portable mirrors of the subagents (phaser-architect, phaser-coder,
+                   phaser-debugger, phaser-asset-advisor)
 hooks/           — SessionStart detector + PreToolUse v3 API guard
                    hooks.json defines hook configuration; scripts/ contains detect-phaser.sh
 .claude-plugin/  — plugin.json + marketplace.json
                    Plugin metadata, versioning, and marketplace listing
+.codex-plugin/   — plugin.json for Codex / skills.sh discovery
 scripts/         — Validation and utility scripts
 ```
+
+## The Workflow This Plugin Encodes
+
+```
+/phaser-gdd ──► /phaser-new ──► phaser-coder ──► /phaser-playtest ──► /phaser-build
+   plan            scaffold        implement        VERIFY RUNNING        ship
+     │                                 ▲                  │
+     │                                 └──── fix ─────────┘
+     └── acceptance criteria ─────────────────► playtest scenarios
+```
+
+The gate that matters is `/phaser-playtest`. Every other step can succeed on a game
+that shows a black screen; this is the only one that cannot.
 
 ## Conventions
 
@@ -50,6 +69,27 @@ scripts/         — Validation and utility scripts
 ### TypeScript Gate
 Always run `npx tsc --noEmit` after code changes. Never push code with TypeScript compilation errors.
 
+### Runtime Gate (CRITICAL — a passing compile is not a working game)
+`tsc` proves the code compiles. It says nothing about whether the game runs. Asset path
+typos, a scene missing from `scene: []`, a throw partway through `create()`, objects
+placed off-camera — every one of these type-checks cleanly and ships a black screen.
+
+After any change touching scene lifecycle, asset loading, physics, or rendering, run:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-playtest/scripts/playtest.mjs" --project .
+```
+
+Rules:
+- **Never report a feature complete without having run the game.** If you did not run
+  it, say so explicitly rather than implying it works.
+- A green `tsc` plus a failing playtest means the work is **not** done.
+- Every scaffolded project gets `if (import.meta.env.DEV) (window as any).__PHASER_GAME__ = game;`
+  next to `new Phaser.Game(config)`. Dev-only, one line, and it unlocks every state assertion.
+- Before any deploy, run `--mode build`. That is where base-path and bundling failures appear.
+- Headless FPS is software-rendered: treat it as a regression signal between runs, not
+  a real-device measurement.
+
 ### 2-Attempt Pivot Rule
 When fixing game mechanics (enemy AI, physics, collisions), propose the approach first and get approval before implementing. If an approach fails twice, STOP and propose 2-3 completely different alternative approaches rather than iterating on the same broken approach.
 
@@ -69,6 +109,18 @@ Only include files that were actually changed for the current task. Do not mix u
 
 ### Test-Driven Complex Fixes
 For complex game mechanics (AI, physics, collisions), write a failing test first, then iterate against the test autonomously.
+
+For mechanics that only manifest at runtime, the failing test is a **playtest scenario**
+(`skills/phaser-playtest/`) rather than a unit test: drive the input that triggers the
+bug, assert on the state that should result, watch it fail, then fix. Extract pure logic
+into plain modules and unit-test that with Vitest where the logic is separable — see
+`skills/phaser-build/references/testing-patterns.md`.
+
+### Acceptance Criteria Are the Contract
+GDD Section 13 and the architect's per-phase exit conditions must be observable and
+numeric ("enemy dies in 3 hits", not "combat feels good"). Each automatable criterion
+becomes a playtest assertion. Criteria that genuinely need a human — difficulty feel,
+art readability, audio mix — must be labelled as such rather than given a fake metric.
 
 ## Prompting Discipline
 
@@ -95,7 +147,20 @@ Run the plugin structure validator:
 bash scripts/validate-plugin.sh
 ```
 
-This checks all agents, commands, skills, and hooks for structural correctness.
+It discovers agents, commands, and skills from disk (no hardcoded lists to drift) and
+checks: JSON manifests parse; **the version matches across all manifests and all 21
+skills**; agent and skill frontmatter is complete and `name` matches the directory;
+every agent that mentions Context7 actually grants the MCP tools in its `tools`
+allowlist; portable skill mirrors match their agent definitions; shell and JS scripts
+parse; every `${CLAUDE_PLUGIN_ROOT}` and cross-skill file reference resolves; and the
+SessionStart hook runs against a fixture.
+
+Verify a Phaser project builds and runs:
+
+```bash
+bash skills/phaser-build/scripts/validate-project.sh /path/to/game   # structure
+node skills/phaser-playtest/scripts/playtest.mjs --project /path/to/game   # runtime
+```
 
 ## Key Phaser 4 Facts
 

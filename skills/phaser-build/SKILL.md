@@ -1,7 +1,7 @@
 ---
 name: phaser-build
 description: This skill should be used when the user asks to "build my game", "run my Phaser game", "start dev server", "deploy my game", "fix build errors", "configure Vite for Phaser", "game won't build", "TypeScript errors in Phaser", "publish to itch.io", or needs to compile, run, troubleshoot, or deploy a Phaser 4 project.
-version: 0.4.0
+version: 0.6.0
 ---
 
 # Phaser 4 Build and Deployment

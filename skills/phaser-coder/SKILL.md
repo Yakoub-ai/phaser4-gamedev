@@ -1,7 +1,7 @@
 ---
 name: phaser-coder
 description: This skill should be used when the user asks to implement Phaser 4 game code, create or edit scenes, add players, enemies, scoring, collectibles, movement, shooting, animations, input, physics behavior, game objects, or complete gameplay features in TypeScript.
-version: 0.4.0
+version: 0.6.0
 ---
 
 # Phaser 4 Coder

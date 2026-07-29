@@ -1,6 +1,6 @@
 # GDD Template Examples
 
-These three outlines show how a complete 12-section GDD reads for different genres. Each makes concrete design decisions rather than leaving blanks. Use them as starting points and replace every detail with your own.
+These three outlines show how a complete 13-section GDD reads for different genres. Each makes concrete design decisions rather than leaving blanks. Use them as starting points and replace every detail with your own.
 
 ## Platformer: "Crystal Caverns"
 
