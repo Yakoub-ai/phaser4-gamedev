@@ -20,7 +20,7 @@ If an argument was provided ($ARGUMENTS), treat it as the desired game genre. If
 
    Do NOT ask all five if the answers are obvious from context. Skip questions the user has already answered. Keep the conversation moving.
 
-3. **Generate the GDD** — Use the **phaser-gdd** skill's 12-section structure to produce the full document. Fill every section with genre-appropriate content. Mark any assumptions with `<!-- ASSUMPTION -->` so the user can easily find and revise them.
+3. **Generate the GDD** — Use the **phaser-gdd** skill's 13-section structure to produce the full document. Fill every section with genre-appropriate content. Mark any assumptions with `<!-- ASSUMPTION -->` so the user can easily find and revise them.
 
 4. **Save the document** — Write the GDD to `docs/GDD.md` in the project root. Create the `docs/` directory if it does not exist. If there is no project directory (e.g., the user is just exploring), print the full GDD inline in the chat instead.
 

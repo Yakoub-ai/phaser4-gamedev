@@ -1,7 +1,7 @@
 ---
 name: phaser-asset-advisor
 description: This skill should be used when the user asks about Phaser 4 asset loading, sprite sheets, texture atlases, image optimization, preloader scenes, loading bars, tile map assets, audio formats, bitmap fonts, free game assets, generated placeholder assets, asset organization, or asset pipeline performance.
-version: 0.4.0
+version: 0.6.0
 ---
 
 # Phaser 4 Asset Advisor

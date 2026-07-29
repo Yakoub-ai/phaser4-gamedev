@@ -1,16 +1,16 @@
 ---
 name: phaser-gdd
 description: This skill should be used when the user asks to "write a game design document", "create a GDD", "design my game", "document game mechanics", "plan game progression", "define core loop", "art direction", "audio design plan", "monetization strategy", "game concept document", "plan my game before coding", or wants to produce a structured design document for a Phaser 4 game before writing any code.
-version: 0.4.0
+version: 0.6.0
 ---
 
 # Phaser 4 Game Design Document Generator
 
 Generate a comprehensive Game Design Document (GDD) for a Phaser 4 game. The GDD captures every design decision — mechanics, art, audio, progression, technical constraints — in a single Markdown file so the entire team (or solo dev) has a shared reference before any code is written.
 
-## GDD Structure (12 Sections)
+## GDD Structure (13 Sections)
 
-Every generated GDD must include all 12 sections below. If the user has not specified details for a section, provide sensible defaults based on the genre and scope, and mark assumptions with `<!-- ASSUMPTION -->` so they are easy to find and revise.
+Every generated GDD must include all 13 sections below. If the user has not specified details for a section, provide sensible defaults based on the genre and scope, and mark assumptions with `<!-- ASSUMPTION -->` so they are easy to find and revise.
 
 ---
 
@@ -254,6 +254,56 @@ Include:
 
 ---
 
+### Section 13 — Acceptance Criteria
+
+Every other section describes intent. This one is the only part a machine can check,
+and it is what turns the GDD from a document into a specification.
+
+Write each criterion so that it is **observable, numeric, and false when the game is
+wrong**. "The player should feel powerful" is not a criterion. "A charged attack deals
+3× base damage" is.
+
+Derive criteria directly from Sections 3 (Mechanics), 4 (Progression), and 6
+(Entities) — anywhere the design commits to a number, that number is a criterion.
+
+| Criterion | Observable state | Playtest assertion |
+|---|---|---|
+| Player jumps 3 tiles (96px) high | `player.y` at apex | `player.y`, `atMost: spawnY - 96` |
+| Basic enemy dies in 3 hits | `enemy.active` | press attack ×3, then `enemy.active`, `equals: false` |
+| Score persists into GameOver | `registry.get('score')` | transition, then `atLeast: 10` |
+| Coyote time is 100ms | jump succeeds after leaving ledge | walk off, wait 80ms, jump → `body.velocity.y < 0` |
+| Wave 5 spawns 12 enemies | active enemy count | set wave, then `enemies.countActive(true)`, `equals: 12` |
+| Holds 60fps with 50 entities | `game.loop.actualFps` | spawn 50, then `atLeast: 55` |
+| Boot reaches menu in under 3s | scene key at t=3s | `game.scene.isActive('MainMenuScene')`, `equals: true` |
+
+Group criteria under the milestone that must satisfy them:
+
+```markdown
+### Vertical Slice
+- [ ] Player spawns at level start and responds to left/right/jump within 1 frame
+- [ ] Falling off the map triggers respawn at the last checkpoint within 500ms
+- [ ] Collecting a coin increments score by 10 and plays the pickup sound
+
+### Alpha
+- [ ] All 8 levels load without console errors
+- [ ] Enemy AI pathfinds around static geometry (no wall-clipping over 30s)
+```
+
+Mark anything genuinely subjective as such rather than inventing a fake metric:
+
+```markdown
+### Human review required (not automatable)
+- Difficulty curve across levels 1-8 feels fair to a first-time player
+- Art reads clearly against every background
+- Audio mix is balanced at 50% volume
+```
+
+Save these to `docs/acceptance-criteria.md` alongside the GDD. The phaser-playtest
+skill turns each automatable criterion into a scenario assertion, which is how the
+design gets verified rather than merely stated.
+
+---
+
 ## Post-GDD Workflow
 
 Once the GDD is finalized, guide the user to the next steps:
@@ -270,7 +320,7 @@ Remind the user: the GDD is a living document. Update it as the game evolves dur
 
 The generated GDD must be a **single Markdown document** with:
 - A top-level `# Game Design Document: [Title]` heading.
-- Each of the 12 sections as `## Section N — Name` headings.
+- Each of the 13 sections as `## Section N — Name` headings.
 - **ASCII diagrams** for all flow charts, wireframes, and level maps (no external image dependencies).
 - Tables for structured data (enemies, assets, audio, controls).
 - `<!-- ASSUMPTION -->` comments next to any detail the generator inferred rather than received from the user.

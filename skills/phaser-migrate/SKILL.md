@@ -1,7 +1,7 @@
 ---
 name: phaser-migrate
 description: This skill should be used when the user asks to "migrate from Phaser 3", "upgrade to Phaser 4", "convert my v3 game", "Phaser 3 to 4 migration", "update Phaser version", "my Phaser 3 game broke after upgrading", "behavior changed after RC upgrade", "RC6 to RC7 migration", or has code that uses deprecated or removed Phaser 3 APIs or behavior that silently drifted between Phaser 4 RC releases.
-version: 0.5.0
+version: 0.6.0
 ---
 
 # Phaser 3 → Phaser 4 Migration

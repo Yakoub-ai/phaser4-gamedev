@@ -34,41 +34,66 @@ Run a comprehensive validation check on the current Phaser 4 project.
 
 ## After Validation
 
-- **0 errors**: "Project is healthy. Use `/phaser-build` to create a production build."
-- **Errors found**: Fix each one. The phaser-debugger agent can help with runtime issues; the phaser-migrate skill helps with v3 API errors.
+- **0 errors and the playtest passes**: "Project is healthy and verified running. Use `/phaser-build` to create a production build."
+- **0 structural errors but the playtest fails**: the project is *not* healthy. Report the runtime failures — do not describe it as passing.
+- **Errors found**: Fix each one. The phaser-debugger agent handles runtime issues; the phaser-migrate skill handles v3 API errors.
 
-### Enhanced Validation (Phase 2)
+### Phase 2 — Compile
 
-After structural validation passes, perform these additional checks:
+1. Run `npx tsc --noEmit`. Report any errors and stop here if it fails — nothing
+   downstream is meaningful on code that does not compile.
+2. Run `npm run build`. Report the `dist/` size. Flag over 20MB (warn) or 50MB
+   (error) for a web game.
 
-**Runtime Verification:**
-1. Run `npx tsc --noEmit` to check TypeScript compilation — report any errors
-2. Run `npm run build` to verify the full build succeeds — report dist/ directory size
-3. Flag if dist/ total size exceeds 20MB (warn) or 50MB (error for web games)
+### Phase 3 — Runtime Verification (do not skip)
 
-**Smoke Test Generation:**
-After validation, generate a `docs/smoke-test-checklist.md` customized to the project's scenes. For each scene found in the project:
-- "[ ] Navigate to [SceneName] — verify it loads without console errors"
-- For BootScene: "[ ] Verify transition to PreloaderScene happens automatically"
-- For PreloaderScene: "[ ] Verify loading bar fills and transitions to next scene"  
-- For GameScene: "[ ] Verify player spawns, controls respond, physics work"
-- For physics games: "[ ] Verify gravity applies correctly, collisions trigger"
-- For audio: "[ ] Verify background music plays after first user interaction"
-- For mobile-targeted games: "[ ] Test on Chrome DevTools mobile emulator at 375x667"
-- For HUDScene: "[ ] Verify score/health display updates during gameplay"
+Structural checks and a green compile say nothing about whether the game runs. Verify
+it by actually running it:
 
-**Pre-Deployment Checklist:**
-Generate a `docs/deploy-checklist.md` with:
-- [ ] `arcade: { debug: false }` in GameConfig (no physics debug outlines)
-- [ ] All `console.log` statements removed or gated behind `import.meta.env.DEV`
-- [ ] All assets load without 404 errors (check Network tab)
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-playtest/scripts/playtest.mjs" --project .
+node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-playtest/scripts/playtest.mjs" --project . --mode build
+```
+
+The first run tests the dev build; the second tests the production bundle, where
+base-path, asset-copying, and tree-shaking bugs appear. Run any scenarios in
+`playtest/` as well.
+
+If Playwright is missing, offer to install it
+(`npm install -D playwright && npx playwright install chromium`). If the user declines,
+state clearly in the report that runtime behaviour was **not verified** — do not let
+structural checks stand in for it.
+
+Report exactly what the harness reports: scenes active, canvas rendering, assets
+loading, FPS, console and page errors. For each failure, give the diagnosis from the
+failure table in `skills/phaser-playtest/SKILL.md`, then fix it and re-run.
+
+### Phase 4 — Pre-Deployment Checklist
+
+Generate `docs/deploy-checklist.md`, marking each item that the harness already
+verified as **checked, with the evidence** — leave only genuinely manual items open:
+
+Verified automatically (tick these from the playtest results):
+- [ ] Game boots and reaches its first playable scene
+- [ ] Canvas renders content (not a black screen)
+- [ ] All assets load — no 404s, no `text/html` masking a missing file
+- [ ] No uncaught exceptions or console errors
+- [ ] Frame rate holds (headless is a regression signal, not a device measurement)
 - [ ] `npx tsc --noEmit` passes with zero errors
-- [ ] `npm run build` succeeds
-- [ ] Built game in `dist/` runs correctly
-- [ ] Game tested in Chrome, Firefox, Safari
-- [ ] Mobile tested if targeting mobile (iOS Safari, Android Chrome)
-- [ ] Controls work: keyboard (desktop), touch (mobile), gamepad (if supported)
-- [ ] Scale Manager responsive at multiple screen sizes
-- [ ] `vite.config.ts` has correct `base` for deployment target
-- [ ] Bundle size under 20MB total
-- [ ] No memory leaks (play 5 minutes, check DevTools Memory tab)
+- [ ] `npm run build` succeeds and the built game runs from `dist/`
+
+Verified by inspection (grep the source):
+- [ ] `arcade: { debug: false }` in the production GameConfig
+- [ ] `console.log` removed or gated behind `import.meta.env.DEV`
+- [ ] `vite.config.ts` has the correct `base` for the deployment target
+- [ ] Bundle size under budget
+
+Genuinely manual — state that these remain unverified:
+- [ ] Tested in Firefox and Safari (the harness runs Chromium only)
+- [ ] Tested on real iOS and Android hardware (emulation is not Safari)
+- [ ] Audio is audibly correct (the harness confirms playback state, not sound)
+- [ ] No memory leak over a 5-minute session
+- [ ] The game is actually fun and readable
+
+Do not tick an item the project has not actually passed. A checklist that overstates
+its coverage is worse than no checklist.

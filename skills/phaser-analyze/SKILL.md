@@ -1,7 +1,7 @@
 ---
 name: phaser-analyze
 description: This skill should be used when the user asks to "analyze my game", "review my Phaser project", "audit project health", "find bottlenecks", "refactor my game", "improve my code", "optimize my project", "what's wrong with my game", "code review Phaser", or "assess architecture".
-version: 0.4.0
+version: 0.6.0
 ---
 
 # Phaser 4 Brownfield Project Analysis

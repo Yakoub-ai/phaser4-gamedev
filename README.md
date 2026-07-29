@@ -1,15 +1,32 @@
 # phaser4-gamedev
 
-A portable agent-skills package and Claude Code plugin that makes building [Phaser 4](https://phaser.io) web games fast and easy. It ships **20 portable skills**, **4 Claude Code subagents**, **6 Claude slash commands**, and **2 Claude hooks** that encode deep Phaser 4 (v4.0.0-rc.7) knowledge — so you can build any 2D web game without needing to memorize the API.
+A portable agent-skills package and Claude Code plugin that makes building [Phaser 4](https://phaser.io) web games fast and easy. It ships **21 portable skills**, **5 Claude Code subagents**, **7 Claude slash commands**, and **2 Claude hooks** that encode deep Phaser 4 (v4.0.0-rc.7) knowledge — so you can build any 2D web game without needing to memorize the API.
+
+It covers the whole loop, not just the coding part:
+
+```
+/phaser-gdd ──► /phaser-new ──► phaser-coder ──► /phaser-playtest ──► /phaser-build
+   plan            scaffold        implement       VERIFY RUNNING         ship
+     │                                 ▲                  │
+     │                                 └──── fix ─────────┘
+     └── acceptance criteria ─────────────────► playtest scenarios
+```
+
+The step most toolkits skip is `/phaser-playtest`. `tsc --noEmit` proves your code
+*compiles*; it says nothing about whether the game *runs*. A mistyped asset path, a
+scene left out of `scene: []`, a throw partway through `create()` — all type-check
+perfectly and all ship a black screen. The playtest harness boots the real game in
+headless Chromium, drives real input, and reports what actually happened.
 
 ## Features
 
-- **20 Portable Skills** — installable with `npx skills add` for Codex, Claude Code, Cursor, OpenCode, and other compatible coding agents
-- **4 Claude Code Agents** — specialized subagents for architecture, coding, debugging, and asset management
-- **6 Claude Commands** — `/phaser-new`, `/phaser-run`, `/phaser-validate`, `/phaser-build`, `/phaser-gdd`, `/phaser-analyze`
+- **21 Portable Skills** — installable with `npx skills add` for Codex, Claude Code, Cursor, OpenCode, and other compatible coding agents
+- **5 Claude Code Agents** — specialized subagents for architecture, coding, debugging, asset management, and playtesting
+- **7 Claude Commands** — `/phaser-new`, `/phaser-run`, `/phaser-playtest`, `/phaser-validate`, `/phaser-build`, `/phaser-gdd`, `/phaser-analyze`
+- **Headless Playtest Harness** — a real, runnable Playwright script that boots the game, catches black screens, asset 404s, uncaught exceptions and FPS collapse, drives scripted input, and asserts on live game state
 - **2 Claude Hooks** — PreToolUse v3 API guard (catches deprecated APIs before code is saved) + SessionStart Phaser project detector
 - **9 Game Archetypes** — platformer, top-down RPG, space shooter, match-3 puzzle, tower defense, endless runner, card game, fighting game, racing — full specs with `/phaser-new`
-- **Game Design Documents** — generate comprehensive 12-section GDDs with `/phaser-gdd`
+- **Game Design Documents** — generate comprehensive 13-section GDDs with `/phaser-gdd`
 - **Project Analysis** — analyze existing projects for architecture, performance, and code quality with `/phaser-analyze`
 - **Device Profiles** — platform-specific optimization guides for iOS, Android, desktop, Capacitor, and PWA
 - **Asset Sourcing** — guides for finding free assets, creation tools, and placeholder-to-production workflows
@@ -67,6 +84,8 @@ The portable skills include the original lifecycle skills plus portable equivale
 - `phaser-debugger`
 - `phaser-asset-advisor`
 
+`phaser-playtest` is the portable equivalent of the `phaser-playtester` subagent — the harness is a plain Node script, so it works from any agent (or from your own terminal and CI) with no Claude Code dependency.
+
 The repository also includes `.codex-plugin/plugin.json` with `skills: "./skills/"` for Codex plugin discovery.
 
 To make this repository discoverable/installable through skills.sh-compatible tooling, keep the `skills/<skill-name>/SKILL.md` structure valid and publish the repository. There is no `skills.sh` file to edit in this repo; users install from the GitHub repo with `npx skills add Yakoub-ai/phaser4-gamedev`.
@@ -79,9 +98,25 @@ Use this path when you want the complete Claude Code integration: plugin-scoped 
 
 - [Claude Code](https://claude.ai/code) CLI installed and authenticated
 
+#### Recommended: Playwright (for `/phaser-playtest`)
+
+The playtest harness needs a browser. Install it once per game project:
+
+```bash
+npm install -D playwright && npx playwright install chromium
+```
+
+Without it, everything else still works — you just lose runtime verification, which is
+the part that catches black screens.
+
 #### Optional: Context7 MCP Server
 
-The plugin's agents reference [Context7](https://github.com/upstash/context7) for live Phaser 4 API verification. While agents work without it (they have extensive built-in Phaser 4 knowledge), installing Context7 enables real-time API lookups for edge cases during the RC phase.
+The agents verify Phaser 4 APIs against `node_modules/phaser/types/phaser.d.ts` in your
+project first — that is the exact signature for your installed version and cannot be out
+of date. [Context7](https://github.com/upstash/context7) is an optional addition that
+supplies the prose and examples type definitions lack, which is useful during the RC
+phase. The agents' `tools` allowlists already grant the Context7 MCP tools, so it works
+as soon as the server is configured.
 
 #### Method 1: Interactive (recommended)
 
@@ -224,6 +259,21 @@ Diagnoses and fixes Phaser 4 issues systematically.
 
 ---
 
+### `phaser-playtester`
+
+Verifies the game actually runs. Owns runtime verification the way phaser-coder owns implementation.
+
+**Triggers:** "playtest my game", "does it actually work", "verify the game runs", "smoke test", "write a playtest scenario", "check FPS", "screenshot the game"
+
+**Does:**
+- Boots the game in headless Chromium and reports what really happened
+- Catches black screens, asset 404s (including files the dev server masks as `200 text/html`), uncaught exceptions, dead scenes, FPS collapse
+- Drives scripted input — keys, clicks, touch — and asserts on live `Phaser.Game` state
+- Turns GDD acceptance criteria into regression scenarios
+- States plainly what it could *not* verify (audio audibility, real-device perf, whether the game is fun)
+
+---
+
 ### `phaser-asset-advisor`
 
 Guides asset loading, packing, and optimization.
@@ -240,7 +290,7 @@ Guides asset loading, packing, and optimization.
 
 ---
 
-## Skills (16 Slash Commands)
+## Skills
 
 ### Core Skills
 
@@ -332,6 +382,53 @@ Covers:
 - Common issues: 404 assets (must be in `public/`), missing `phaser@beta`
 - Deployment to itch.io, GitHub Pages, Netlify/Vercel, Capacitor (iOS/Android)
 - Includes `scripts/validate-project.sh` — automated health check
+
+---
+
+### `/phaser-playtest` — Verify the Game Actually Runs
+
+```
+"playtest my game" / "does my game actually work" / "test it in a browser" / "smoke test"
+```
+
+Runs the game in headless Chromium and reports what really happens:
+
+```bash
+node skills/phaser-playtest/scripts/playtest.mjs --project .
+```
+
+```
+[PASS] page loads — HTTP 200
+[PASS] canvas created — 800x600
+[PASS] Phaser game instance found — window.__PHASER_GAME__
+[INFO] renderer — WEBGL (Phaser 4.0.0 RC7)
+[PASS] active scenes — GameScene(43 objects)
+[PASS] frame rate — median 60 fps, 5th pct 59 fps (91 frames)
+[PASS] canvas renders content — 333 distinct colours, 5.6% non-background
+[FAIL] all assets load — HTTP 200 but served as text/html — file is missing
+       and the dev server returned index.html instead  /assets/player.png
+```
+
+Checks the page loads, the canvas exists and is **not blank**, Phaser booted, scenes
+are active and holding display objects, frame rate holds, and every asset loaded — plus
+console errors, uncaught exceptions, and failed requests. Writes `.playtest/report.json`
+and PNG screenshots. Exits non-zero on failure, so it drops straight into CI.
+
+Scenarios drive real input and assert on live state:
+
+```javascript
+export default [
+  { name: 'walk right', action: 'key', key: 'ArrowRight', duration: 600 },
+  { name: 'player advanced', action: 'expect',
+    expect: { expression: `game.scene.getScene('GameScene').player.x > 400`, equals: true } },
+  { name: 'attack lands', action: 'press', key: 'Space',
+    expect: { expression: `game.registry.get('enemyHp')`, atMost: 90 } },
+];
+```
+
+`--mode build` tests the production bundle (where `base`-path and tree-shaking bugs
+live). `--device iphone` tests a mobile viewport. Requires
+`npm install -D playwright && npx playwright install chromium`.
 
 ---
 
@@ -446,7 +543,7 @@ Covers Scale Manager modes (FIT/ENVELOP/RESIZE), touch controls and responsive l
 "write a game design document" / "create a GDD" / "design my game" / "plan game progression"
 ```
 
-Generates a comprehensive 12-section Game Design Document: game overview, core loop, mechanics deep dive, progression system, level/world design, characters & entities, UI/UX wireframes, art direction, audio design plan, technical requirements, platform targets, and monetization/release plan. Includes example GDD templates for platformer, puzzle, and RPG genres.
+Generates a comprehensive 13-section Game Design Document: game overview, core loop, mechanics deep dive, progression system, level/world design, characters & entities, UI/UX wireframes, art direction, audio design plan, technical requirements, platform targets, monetization/release plan, and machine-checkable acceptance criteria. Includes example GDD templates for platformer, puzzle, and RPG genres.
 
 ---
 
@@ -465,10 +562,11 @@ Generates a comprehensive 12-section Game Design Document: game overview, core l
 | Command | Description |
 |---|---|
 | `/phaser-new [template]` | Scaffold a new game — optionally from an archetype (`platformer`, `topdown`, `shooter`, `puzzle`, `towerdefense`, `runner`, `cardgame`, `fighting`, `racing`) |
-| `/phaser-run` | Start the dev server |
+| `/phaser-run` | Start the dev server and verify the game boots |
+| `/phaser-playtest [dev\|build\|mobile]` | Run the game headless and verify it actually works |
 | `/phaser-validate` | Run the project health check (structure, runtime, smoke tests, deploy checklist) |
 | `/phaser-build` | Production build and deployment prep |
-| `/phaser-gdd [genre]` | Generate a comprehensive 12-section Game Design Document |
+| `/phaser-gdd [genre]` | Generate a comprehensive 13-section Game Design Document |
 | `/phaser-analyze` | Analyze an existing project for architecture, performance, and code quality |
 
 ---
@@ -503,10 +601,16 @@ Validate the plugin structure:
 bash scripts/validate-plugin.sh
 ```
 
-Validate a Phaser 4 project:
+Validate a Phaser 4 project's structure:
 
 ```bash
 bash skills/phaser-build/scripts/validate-project.sh /path/to/your/game
+```
+
+Verify a Phaser 4 project actually runs:
+
+```bash
+node skills/phaser-playtest/scripts/playtest.mjs --project /path/to/your/game
 ```
 
 ---
@@ -524,10 +628,12 @@ phaser4-gamedev/
 │   ├── phaser-architect.md      (opus)
 │   ├── phaser-coder.md          (sonnet)
 │   ├── phaser-debugger.md       (opus)
-│   └── phaser-asset-advisor.md  (sonnet)
+│   ├── phaser-asset-advisor.md  (sonnet)
+│   └── phaser-playtester.md     (sonnet)
 ├── commands/
 │   ├── phaser-new.md
 │   ├── phaser-run.md
+│   ├── phaser-playtest.md
 │   ├── phaser-validate.md
 │   ├── phaser-build.md
 │   ├── phaser-gdd.md
@@ -546,6 +652,7 @@ phaser4-gamedev/
 │   ├── phaser-scene/        scene creation and transitions
 │   ├── phaser-gameobj/      sprites, text, particles, containers
 │   ├── phaser-physics/      Arcade Physics + multiplayer patterns
+│   ├── phaser-playtest/     headless runtime verification harness + scenarios
 │   ├── phaser-build/        build, deploy, validate + testing patterns
 │   ├── phaser-migrate/      v3 → v4 migration
 │   ├── phaser-audio/        Web Audio, audio sprites, mobile unlock
