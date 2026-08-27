@@ -10,7 +10,7 @@ Start the Phaser 4 development server and confirm the game actually runs.
 
 2. **Check for node_modules** — If `node_modules/` does not exist, run `npm install` first.
 
-3. **Check for the phaser dependency** — Look in `package.json` for `"phaser"`. If missing, warn and suggest `npm install phaser@beta`.
+3. **Check for the phaser dependency** — Look in `package.json` for `"phaser"`. If missing, warn and suggest `npm install phaser`.
 
 4. **Type-check** — Run `npx tsc --noEmit`. Report any errors before starting the server; a project that does not compile will not run.
 

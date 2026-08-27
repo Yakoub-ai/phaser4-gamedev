@@ -207,7 +207,7 @@ Include:
 Pin down the Phaser-specific technical decisions.
 
 Include:
-- **Phaser Version** — `phaser@beta` (v4.0.0-rc.7) unless the user specifies otherwise.
+- **Phaser Version** — `phaser` (v4.2.1 stable) unless the user specifies otherwise.
 - **Physics Engine** — Choose one and justify:
   - **Arcade** — Simple AABB, best for platformers and shooters. Low CPU cost.
   - **Matter.js** — Full rigid-body physics. Use for games needing rotation, joints, or complex collision shapes.

@@ -1,4 +1,4 @@
-# Animation State-Machine Patterns (Phaser 4 RC7)
+# Animation State-Machine Patterns
 
 ## Why a state machine
 
@@ -17,7 +17,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   setCinematicMode(active: boolean, forcedAnimKey?: string): void {
     this.cinematicMode = active;
     if (active && forcedAnimKey) {
-      this.anims.stop();                     // REQUIRED before play() on state switch in RC7
+      this.anims.stop();                     // REQUIRED before play() on a state switch
       this.play(forcedAnimKey, true);
       this.once(
         Phaser.Animations.Events.ANIMATION_COMPLETE_KEY + forcedAnimKey,
@@ -72,9 +72,9 @@ function canTransition(from: CharState, to: CharState): boolean {
 }
 ```
 
-## RC7 ordering rule: always `stop()` before `play()` on state switch
+## Ordering rule: always `stop()` before `play()` on state switch
 
-In Phaser 4 RC7, calling `sprite.play(newKey)` mid-animation can silently no-op when the previous animation hasn't ended. ALWAYS:
+In Phaser 4, calling `sprite.play(newKey)` mid-animation can silently no-op when the previous animation hasn't ended. ALWAYS:
 
 ```typescript
 // Switching state (idle → walk):
@@ -88,14 +88,14 @@ sprite.play('walk', true);  // true = ignoreIfPlaying=false (force restart)
 sprite.play('idle');  // no stop() needed
 ```
 
-See also `skills/phaser-migrate/references/rc6-to-rc7-changes.md` → section 2 for the RC6 behavior.
+See also `skills/phaser-migrate/references/runtime-gotchas.md` → section 2 for the animation-switch behavior.
 
-## RC7 `ANIMATION_COMPLETE` timing drift
+## `ANIMATION_COMPLETE` timing
 
-In RC7, `ANIMATION_COMPLETE` (and the keyed variant) fires one tick later than in RC6 for single-shot animations. Do NOT mutate position or state synchronously inside the handler — the next `update()` tick runs FIRST and overwrites you.
+`ANIMATION_COMPLETE` (and the keyed variant) is not guaranteed to land before the next `update()` tick for single-shot animations. Do NOT mutate position or state synchronously inside the handler — the next `update()` tick runs FIRST and overwrites you.
 
 ```typescript
-// RISKY in RC7:
+// RISKY:
 sprite.on(Phaser.Animations.Events.ANIMATION_COMPLETE_KEY + 'attack', () => {
   player.state = 'idle';  // may be overwritten by update() before next render
 });
@@ -154,6 +154,6 @@ The guarded form leaves walk-loops playing when dialogue opens mid-movement. The
 
 ## Cross-references
 
-- `skills/phaser-migrate/references/rc6-to-rc7-changes.md` — sections 2 (stop/play ordering) and 3 (ANIMATION_COMPLETE timing).
+- `skills/phaser-migrate/references/runtime-gotchas.md` — sections 2 (stop/play ordering) and 3 (ANIMATION_COMPLETE timing).
 - `agents/phaser-coder.md` → "Animation Pattern" and "Critical Rules" have pointers back to this file.
 - `agents/phaser-debugger.md` → "Forced Animation Stomped by Next Tick" category lists this file as the canonical fix.

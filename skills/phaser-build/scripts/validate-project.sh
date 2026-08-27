@@ -29,18 +29,20 @@ echo ""
 info "Checking package.json..."
 
 if [[ ! -f "$PROJECT_DIR/package.json" ]]; then
-  error "package.json not found. Run: npm init -y && npm install phaser@beta"
+  error "package.json not found. Run: npm init -y && npm install phaser"
 else
   # Check phaser dependency
   if grep -q '"phaser"' "$PROJECT_DIR/package.json"; then
     PHASER_VER=$(node -e "const p=require('$PROJECT_DIR/package.json'); console.log(p.dependencies?.phaser||p.devDependencies?.phaser||'not found')" 2>/dev/null || echo "not found")
-    if echo "$PHASER_VER" | grep -qE "^4|beta|rc"; then
+    if echo "$PHASER_VER" | grep -qE "rc|beta"; then
+      warn "Phaser pinned to a pre-release: '$PHASER_VER'. Phaser 4 is stable — run: npm install phaser@latest"
+    elif echo "$PHASER_VER" | grep -qE "^[^0-9]*4\\."; then
       ok "Phaser dependency: $PHASER_VER"
     else
-      warn "Phaser version may not be v4: '$PHASER_VER'. Run: npm install phaser@beta"
+      warn "Phaser version may not be v4: '$PHASER_VER'. Run: npm install phaser@latest"
     fi
   else
-    error "No phaser dependency in package.json. Run: npm install phaser@beta"
+    error "No phaser dependency in package.json. Run: npm install phaser"
   fi
 
   # Check for dev script
@@ -72,7 +74,7 @@ else
     if echo "$INSTALLED_VER" | grep -qE "^4"; then
       ok "Phaser $INSTALLED_VER installed"
     else
-      warn "Installed Phaser is $INSTALLED_VER — expected 4.x. Run: npm install phaser@beta"
+      warn "Installed Phaser is $INSTALLED_VER — expected 4.x. Run: npm install phaser"
     fi
   fi
 fi
@@ -83,16 +85,26 @@ echo ""
 info "Checking TypeScript config..."
 
 if [[ -f "$PROJECT_DIR/tsconfig.json" ]]; then
-  if grep -q "typeRoots" "$PROJECT_DIR/tsconfig.json"; then
-    ok "tsconfig.json has typeRoots"
+  # Phaser 4 ships its types via its package.json `exports` map. The Phaser 3 recipe
+  # (typeRoots + types: ["Phaser"]) does not just become unnecessary on v4 — it breaks
+  # the build with TS2688, because v4 publishes a single types/phaser.d.ts rather than
+  # a Phaser/index.d.ts type-root package.
+  if grep -q "typeRoots" "$PROJECT_DIR/tsconfig.json" && grep -q '"Phaser"' "$PROJECT_DIR/tsconfig.json"; then
+    error "tsconfig.json carries the Phaser 3 type recipe (typeRoots + types: [\"Phaser\"]). On Phaser 4 this fails with TS2688. Remove both keys."
   else
-    error "tsconfig.json missing typeRoots. Add: \"typeRoots\": [\"./node_modules/phaser/types\"]"
+    ok "tsconfig.json does not carry the v3 typeRoots/types recipe"
   fi
 
-  if grep -q '"Phaser"' "$PROJECT_DIR/tsconfig.json"; then
-    ok "tsconfig.json has Phaser in types"
+  if grep -qE '"moduleResolution" *: *"(bundler|node16|nodenext|Bundler|Node16|NodeNext)"' "$PROJECT_DIR/tsconfig.json"; then
+    ok "tsconfig.json moduleResolution resolves Phaser's exports map"
   else
-    error "tsconfig.json missing types. Add: \"types\": [\"Phaser\"]"
+    warn "tsconfig.json should set \"moduleResolution\": \"bundler\" (or node16/nodenext) so Phaser 4's bundled types resolve"
+  fi
+
+  if grep -q '"strict" *: *true' "$PROJECT_DIR/tsconfig.json"; then
+    ok "tsconfig.json has strict: true"
+  else
+    warn "tsconfig.json should set \"strict\": true — most Phaser null-guard bugs surface here first"
   fi
 else
   info "No tsconfig.json (JavaScript project — that's fine)"

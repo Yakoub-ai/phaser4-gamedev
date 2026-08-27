@@ -175,7 +175,7 @@ expect: { expression: `(() => { const s = game.scene.getScene('GameScene'); retu
   "mode": "dev",
   "canvasSize": { "w": 800, "h": 600 },
   "state": {
-    "phaserVersion": "4.0.0 RC7",
+    "phaserVersion": "4.2.1",
     "renderType": "WEBGL",
     "isBooted": true,
     "activeScenes": [{ "key": "GameScene", "displayList": 43, "bodies": 1, "tweens": 0 }],

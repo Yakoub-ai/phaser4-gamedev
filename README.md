@@ -1,6 +1,6 @@
 # phaser4-gamedev
 
-A portable agent-skills package and Claude Code plugin that makes building [Phaser 4](https://phaser.io) web games fast and easy. It ships **21 portable skills**, **5 Claude Code subagents**, **7 Claude slash commands**, and **2 Claude hooks** that encode deep Phaser 4 (v4.0.0-rc.7) knowledge — so you can build any 2D web game without needing to memorize the API.
+A portable agent-skills package and Claude Code plugin that makes building [Phaser 4](https://phaser.io) web games fast and easy. It ships **21 portable skills**, **5 Claude Code subagents**, **7 Claude slash commands**, and **2 Claude hooks** that encode deep Phaser 4 (v4.2.1) knowledge — so you can build any 2D web game without needing to memorize the API.
 
 It covers the whole loop, not just the coding part:
 
@@ -379,7 +379,7 @@ Full Arcade Physics coverage with **genre recipes**:
 Covers:
 - Dev server (`npm run dev`), production build (`npm run build`)
 - TypeScript errors: `input.keyboard!`, body casting, scene casting
-- Common issues: 404 assets (must be in `public/`), missing `phaser@beta`
+- Common issues: 404 assets (must be in `public/`), a missing `phaser` dependency
 - Deployment to itch.io, GitHub Pages, Netlify/Vercel, Capacitor (iOS/Android)
 - Includes `scripts/validate-project.sh` — automated health check
 
@@ -401,7 +401,7 @@ node skills/phaser-playtest/scripts/playtest.mjs --project .
 [PASS] page loads — HTTP 200
 [PASS] canvas created — 800x600
 [PASS] Phaser game instance found — window.__PHASER_GAME__
-[INFO] renderer — WEBGL (Phaser 4.0.0 RC7)
+[INFO] renderer — WEBGL (Phaser 4.2.1)
 [PASS] active scenes — GameScene(43 objects)
 [PASS] frame rate — median 60 fps, 5th pct 59 fps (91 frames)
 [PASS] canvas renders content — 333 distinct colours, 5.6% non-background
@@ -584,11 +584,11 @@ Generates a comprehensive 13-section Game Design Document: game overview, core l
 
 | Topic | Value |
 |---|---|
-| Install | `npm install phaser@beta` |
-| Latest version | v4.0.0-rc.7 |
+| Install | `npm install phaser` |
+| Latest version | v4.2.1 |
 | Scaffold | `npm create @phaserjs/game@latest` |
 | Renderer | "Phaser Beam" (new WebGL, up to 16x faster filters on mobile) |
-| TypeScript types | `typeRoots: ["./node_modules/phaser/types"]`, `types: ["Phaser"]` |
+| TypeScript types | Resolved automatically via Phaser's `exports` map — use `moduleResolution: "bundler"` and `import Phaser from 'phaser'`. The v3 `typeRoots`/`types: ["Phaser"]` pair breaks v4 builds. |
 | Core API vs v3 | Mostly identical (scenes, physics, input, audio, cameras) |
 
 ---

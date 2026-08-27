@@ -224,9 +224,11 @@ for skill_dir in "$PLUGIN_DIR"/skills/*/; do
     ok "skills/$skill/SKILL.md ($WORD_COUNT words)"
   fi
 
-  # Referenced subdirectories must exist.
+  # Referenced subdirectories must exist. Only *self-relative* mentions count —
+  # a pointer at another skill's `skills/<other>/scripts/...` is checked by the
+  # cross-reference pass below, not by this one.
   for sub in references examples scripts; do
-    if grep -q "$sub/" "$SKILL_MD"; then
+    if grep -oE '(^|[^/[:alnum:]_-])'"$sub"'/' "$SKILL_MD" | grep -qv 'skills/'; then
       if [[ -d "$skill_dir/$sub" ]]; then
         COUNT=$(find "$skill_dir/$sub" -maxdepth 1 -type f | wc -l | tr -d ' ')
         [[ "$COUNT" -gt 0 ]] && ok "  skills/$skill/$sub/ ($COUNT file(s))" || error "  skills/$skill/$sub/ exists but is empty"
@@ -284,7 +286,7 @@ done < <(grep -rhoE '\$\{CLAUDE_PLUGIN_ROOT\}/[A-Za-z0-9_./-]+' \
 DETECT="$PLUGIN_DIR/hooks/scripts/detect-phaser.sh"
 if [[ -f "$DETECT" ]]; then
   TMPDIR_TEST=$(mktemp -d)
-  echo '{"dependencies":{"phaser":"4.0.0-rc.7"}}' > "$TMPDIR_TEST/package.json"
+  echo '{"dependencies":{"phaser":"4.2.1"}}' > "$TMPDIR_TEST/package.json"
   HOOK_OUT=$(cd "$TMPDIR_TEST" && CLAUDE_PLUGIN_ROOT="$PLUGIN_DIR" bash "$DETECT" 2>&1 || true)
   rm -rf "$TMPDIR_TEST"
   if grep -q "Phaser project detected" <<< "$HOOK_OUT"; then
@@ -303,7 +305,7 @@ info "Phaser 4 API accuracy checks..."
 check_mentions() {
   if grep -rqi -- "$1" "$PLUGIN_DIR/agents/" "$PLUGIN_DIR/skills/" 2>/dev/null; then ok "$2"; else warn "$2 — NOT FOUND"; fi
 }
-check_mentions "phaser@beta" "Correct Phaser 4 install command (phaser@beta) is referenced"
+check_mentions "phaser" "Correct Phaser 4 install command (phaser) is referenced"
 check_mentions "Math\.TAU" "Math.TAU (v4 replacement for Math.PI2) is referenced"
 check_mentions "Vector2" "Vector2 (v4 replacement for Geom.Point) is referenced"
 check_mentions "Beam" "Phaser Beam renderer is mentioned"

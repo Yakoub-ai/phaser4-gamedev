@@ -7,7 +7,7 @@
 npm install phaser
 
 # Phaser 4:
-npm install phaser@beta
+npm install phaser
 ```
 
 Phaser 4 package is the same `phaser` package on npm, tagged as `beta`.
@@ -210,15 +210,26 @@ If using TypeScript, update `tsconfig.json`:
 ```json
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "typeRoots": ["./node_modules/phaser/types"],
-    "types": ["Phaser"]
-  }
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["src"]
 }
 ```
 
-The `typeRoots` + `types` fields are required for Phaser 4's type definitions.
+Phaser 4 publishes its types through the `exports` map in its own `package.json`, so a
+modern resolver picks them up from a plain `import Phaser from 'phaser';` with no extra
+config.
+
+> **Delete `typeRoots: ["./node_modules/phaser/types"]` and `types: ["Phaser"]` if your v3
+> tsconfig has them.** Against Phaser 4 that pair fails with
+> `TS2688: Cannot find type definition file for 'Phaser'` — v4 ships one `types/phaser.d.ts`
+> file, which is not a valid type-root package.
 
 ---
 

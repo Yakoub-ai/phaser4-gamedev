@@ -25,7 +25,7 @@ Run a comprehensive validation check on the current Phaser 4 project.
 
 - `package.json` has phaser dependency and dev/build scripts
 - `node_modules/phaser` is installed
-- `tsconfig.json` has correct `typeRoots` and `types: ["Phaser"]`
+- `tsconfig.json` uses `moduleResolution: "bundler"`/`node16` and does **not** set the v3-era `typeRoots` + `types: ["Phaser"]` pair
 - `src/` directory exists with a main entry point
 - At least one scene file exists
 - No deprecated Phaser v3 APIs in source files

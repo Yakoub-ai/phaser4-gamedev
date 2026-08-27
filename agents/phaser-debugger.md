@@ -411,7 +411,7 @@ Check in order:
      // ... state machine only runs outside cinematic mode
    }
    ```
-3. **Clear the flag in the `ANIMATION_COMPLETE_KEY` handler**, not synchronously after calling `play()` — the completion event fires one tick after the last frame renders. In RC7, this event fires one tick later than it did in RC6 (also documented in `skills/phaser-migrate/references/rc6-to-rc7-changes.md`).
+3. **Clear the flag in the `ANIMATION_COMPLETE_KEY` handler**, not synchronously after calling `play()` — the completion event fires one tick after the last frame renders. The event is not guaranteed to land before the next update() tick (also documented in `skills/phaser-migrate/references/runtime-gotchas.md`).
 4. **Canonical pattern in** `skills/phaser-animation/references/state-machine-patterns.md`.
 
 *How to diagnose:* Add a `console.log` inside the `update()` state-machine branch that calls `play()`. If it logs on the frame immediately after your forced play, the state machine is overwriting it.
@@ -531,7 +531,7 @@ Check in order:
      return;
    }
    dynTex.draw(sourceKey, x, y);
-   dynTex.render();  // REQUIRED in Phaser 4 — also documented in skills/phaser-migrate/references/rc6-to-rc7-changes.md
+   dynTex.render();  // REQUIRED in Phaser 4 — also documented in skills/phaser-migrate/references/runtime-gotchas.md
    ```
 3. **Also verify the asset is in `preload()`.** Boot and preloader scenes often load a minimal asset set; if a new source texture was added but its `this.load.*` call was omitted from `preload()`, the key is absent at draw time.
 

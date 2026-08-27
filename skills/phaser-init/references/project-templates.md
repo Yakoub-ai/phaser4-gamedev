@@ -55,8 +55,8 @@ Complete file listings for different project setups.
 ```json
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,
@@ -64,8 +64,7 @@ Complete file listings for different project setups.
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "skipLibCheck": true,
-    "typeRoots": ["./node_modules/phaser/types"],
-    "types": ["Phaser"]
+    "noEmit": true
   },
   "include": ["src"]
 }
@@ -279,7 +278,7 @@ For quick prototyping. Uses an import map or CDN.
   <script type="importmap">
   {
     "imports": {
-      "phaser": "https://cdn.jsdelivr.net/npm/phaser@beta/dist/phaser.esm.min.js"
+      "phaser": "https://cdn.jsdelivr.net/npm/phaser@4/dist/phaser.esm.min.js"
     }
   }
   </script>

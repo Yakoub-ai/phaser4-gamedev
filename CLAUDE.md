@@ -164,7 +164,7 @@ node skills/phaser-playtest/scripts/playtest.mjs --project /path/to/game   # run
 
 ## Key Phaser 4 Facts
 
-- **Install:** `npm install phaser@beta`
-- **Version:** v4.0.0-rc.7
+- **Install:** `npm install phaser`
+- **Version:** v4.2.1
 - **Renderer:** Phaser Beam (WebGL)
-- **Types:** Configure `typeRoots` + `types: ["Phaser"]` in tsconfig.json
+- **Types:** Shipped via Phaser's `exports` map. Use `moduleResolution: "bundler"` + `import Phaser from 'phaser'`. Never set `typeRoots`/`types: ["Phaser"]` — that v3 recipe fails on v4 with `TS2688`.
