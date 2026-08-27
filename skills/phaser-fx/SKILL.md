@@ -200,6 +200,12 @@ sprite.setTint(0xff2200).setTint2(0xffee00).setTintMode(Phaser.TintModes.MULTIPL
 `Mesh2D` and `Tile` support a constant `tint2`. `TilemapGPULayer` does not support tinting
 on tiles at all.
 
+> **Shapes have no tint at all.** `Rectangle`, `Arc`, `Triangle` and the other `Shape`
+> objects do not implement the Tint component — `setTint()` and `setTintMode()` are not
+> methods on them, and the compiler will say so. Change `fillColor` instead:
+> `rect.fillColor = 0xff0000`. This bites most often when prototyping with coloured
+> rectangles and then wondering why the damage flash pattern does not compile.
+
 **The damage flash**, which every action game needs:
 
 ```typescript
@@ -269,11 +275,19 @@ Filters are framebuffer operations. Each one is a render pass, and passes are wh
   `threshold` exist for effects and for stencils, not as a performance lever.
 
 Verify any of this with the playtest harness rather than by eye — filter cost shows up as
-a frame-rate cliff, and a `sample` step on `game.loop.actualFps` catches it:
+a frame-rate cliff under load, which a single reading misses and a `sample` step catches:
 
-```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-playtest/scripts/playtest.mjs" --project .
+```javascript
+{ action: 'sample', expression: `game.loop.actualFps`,
+  duration: 3000, interval: 100, expect: { stat: 'min', atLeast: 50 } }
 ```
+
+> **Read headless FPS as a comparison, never as a number.** The harness runs WebGL through
+> SwiftShader, and filters are precisely what software rendering is worst at: a scene with
+> a glow, a vignette, a colour matrix and a lit particle emitter measures around 12–20fps
+> headless while running at 60 on any real GPU. Compare a run against the previous run on
+> the same machine; do not set an absolute threshold for a filter-heavy scene and do not
+> report a headless number as the game's performance.
 
 ---
 
