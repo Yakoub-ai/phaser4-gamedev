@@ -21,6 +21,11 @@ if (import.meta.env.DEV) {
 export default game;
 ```
 
+> **`import.meta.env` needs Vite's client types.** Add `"types": ["vite/client"]` to
+> `tsconfig.json` `compilerOptions`, or this line fails `npx tsc --noEmit` with
+> `TS2339: Property 'env' does not exist on type 'ImportMeta'` — which the TypeScript
+> gate will then reject.
+
 `import.meta.env.DEV` is `false` in `npm run build`, so the global is stripped from
 production bundles by dead-code elimination.
 

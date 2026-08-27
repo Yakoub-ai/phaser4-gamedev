@@ -1,7 +1,7 @@
 ---
 name: phaser-animation
 description: This skill should be used when the user asks to "create animation", "animate sprite", "add tweens", "sprite animation not playing", "character animations", "easing", "tween timeline", "idle animation", "walk animation", "fade in", "fade out", or "scale animation".
-version: 0.6.0
+version: 0.7.0
 ---
 
 # Phaser 4 Animations and Tweens
@@ -265,7 +265,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   setCinematicMode(active: boolean, forcedAnimKey?: string): void {
     this.cinematicMode = active;
     if (active && forcedAnimKey) {
-      this.anims.stop();          // RC7: always stop before play on state switch
+      this.anims.stop();          // always stop before play on a state switch
       this.play(forcedAnimKey, true);
       this.once(
         Phaser.Animations.Events.ANIMATION_COMPLETE_KEY + forcedAnimKey,
@@ -281,9 +281,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 }
 ```
 
-Clear `cinematicMode` in the `ANIMATION_COMPLETE_KEY` handler, not synchronously after `play()` — in RC7 the completion event fires one tick after the last frame renders. Clear it synchronously and your forced animation exits one frame early.
+Clear `cinematicMode` in the `ANIMATION_COMPLETE_KEY` handler, not synchronously after `play()` — the completion event fires after the last frame renders, and `update()` may run before your handler. Clear it synchronously and your forced animation exits one frame early.
 
-See `references/state-machine-patterns.md` for the full canonical implementation, worked dungeon-entry example, and the RC7 `ANIMATION_COMPLETE` timing-drift fix.
+See `references/state-machine-patterns.md` for the full canonical implementation, worked dungeon-entry example, and the `ANIMATION_COMPLETE` timing fix.
 
 ### State Transition Completeness
 
@@ -470,4 +470,4 @@ emitter.stop();
 ### Reference Files
 - **`references/animation-api.md`** — Complete AnimationManager, AnimationConfig, Animation events, TweenManager, and Timeline API reference
 - **`references/easing-reference.md`** — All built-in easing functions with descriptions, use cases, and code examples
-- **`references/state-machine-patterns.md`** — State-machine discipline for characters: `cinematicMode` flag, canonical state list, transition table, RC7 `stop()`/`play()` ordering rule, and `ANIMATION_COMPLETE` timing drift. Read when building any character with more than idle+walk, or when forced animations play for one frame and revert.
+- **`references/state-machine-patterns.md`** — State-machine discipline for characters: `cinematicMode` flag, canonical state list, transition table, the `stop()`/`play()` ordering rule, and `ANIMATION_COMPLETE` timing. Read when building any character with more than idle+walk, or when forced animations play for one frame and revert.

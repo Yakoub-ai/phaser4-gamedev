@@ -1,28 +1,42 @@
 # phaser4-gamedev
 
-A portable agent-skills package and Claude Code plugin that makes building [Phaser 4](https://phaser.io) web games fast and easy. It ships **21 portable skills**, **5 Claude Code subagents**, **7 Claude slash commands**, and **2 Claude hooks** that encode deep Phaser 4 (v4.0.0-rc.7) knowledge — so you can build any 2D web game without needing to memorize the API.
+A portable agent-skills package and Claude Code plugin that makes building [Phaser 4](https://phaser.io) web games fast and easy. It ships **26 portable skills**, **5 Claude Code subagents**, **10 Claude slash commands**, and **2 Claude hooks** that encode deep Phaser 4 (v4.2.1) knowledge — so you can build any 2D web game without needing to memorize the API.
 
 It covers the whole loop, not just the coding part:
 
 ```
-/phaser-gdd ──► /phaser-new ──► phaser-coder ──► /phaser-playtest ──► /phaser-build
-   plan            scaffold        implement       VERIFY RUNNING         ship
-     │                                 ▲                  │
-     │                                 └──── fix ─────────┘
-     └── acceptance criteria ─────────────────► playtest scenarios
+/phaser-brainstorm ──► /phaser-gdd ──► /phaser-new ──► phaser-coder
+    shape & scope          plan          scaffold        implement
+                             │                               │
+                             │                               ▼
+                             │                       /phaser-playtest ──► /phaser-release
+                             │                        VERIFY RUNNING            ship
+                             │                          ▲       │                 │
+                             │                          └─ fix ─┘                 ▼
+                             │                              ▲             /phaser-feedback
+                             │                              └──── repro ───────┘
+                             └── acceptance criteria ───────────► playtest scenarios
 ```
 
-The step most toolkits skip is `/phaser-playtest`. `tsc --noEmit` proves your code
+Two steps most toolkits skip. The first is `/phaser-playtest`. `tsc --noEmit` proves your code
 *compiles*; it says nothing about whether the game *runs*. A mistyped asset path, a
 scene left out of `scene: []`, a throw partway through `create()` — all type-check
 perfectly and all ship a black screen. The playtest harness boots the real game in
 headless Chromium, drives real input, and reports what actually happened.
 
+The second is `/phaser-feedback`. Paste what players actually wrote — Discord messages,
+itch.io comments, QA notes — and it triages them, reproduces each defect as a *failing*
+playtest scenario, fixes it, verifies the fix, and drafts the reply. The scenario stays
+behind as a regression test, so feedback compounds instead of recurring.
+
 ## Features
 
-- **21 Portable Skills** — installable with `npx skills add` for Codex, Claude Code, Cursor, OpenCode, and other compatible coding agents
+- **26 Portable Skills** — installable with `npx skills add` for Codex, Claude Code, Cursor, OpenCode, and other compatible coding agents
 - **5 Claude Code Agents** — specialized subagents for architecture, coding, debugging, asset management, and playtesting
-- **7 Claude Commands** — `/phaser-new`, `/phaser-run`, `/phaser-playtest`, `/phaser-validate`, `/phaser-build`, `/phaser-gdd`, `/phaser-analyze`
+- **10 Claude Commands** — `/phaser-brainstorm`, `/phaser-gdd`, `/phaser-new`, `/phaser-run`, `/phaser-playtest`, `/phaser-validate`, `/phaser-build`, `/phaser-analyze`, `/phaser-release`, `/phaser-feedback`
+- **Feedback → failing test → fix** — paste raw player feedback and get it triaged, reproduced as a playtest scenario, fixed, and verified, with the scenario kept as a regression test
+- **Flake detection** — `--repeat N` classifies a bug as clean, intermittent, or consistent, and `--seed` separates an RNG bug from a timing bug. "It only happens sometimes" becomes actionable
+- **Full Phaser 4 renderer coverage** — Filters (which replaced FX *and* masks), stencils, cone lights, `Mesh2D`, `SpriteGPULayer`, tint modes, alpha strategies
 - **Headless Playtest Harness** — a real, runnable Playwright script that boots the game, catches black screens, asset 404s, uncaught exceptions and FPS collapse, drives scripted input, and asserts on live game state
 - **2 Claude Hooks** — PreToolUse v3 API guard (catches deprecated APIs before code is saved) + SessionStart Phaser project detector
 - **9 Game Archetypes** — platformer, top-down RPG, space shooter, match-3 puzzle, tower defense, endless runner, card game, fighting game, racing — full specs with `/phaser-new`
@@ -379,7 +393,7 @@ Full Arcade Physics coverage with **genre recipes**:
 Covers:
 - Dev server (`npm run dev`), production build (`npm run build`)
 - TypeScript errors: `input.keyboard!`, body casting, scene casting
-- Common issues: 404 assets (must be in `public/`), missing `phaser@beta`
+- Common issues: 404 assets (must be in `public/`), a missing `phaser` dependency
 - Deployment to itch.io, GitHub Pages, Netlify/Vercel, Capacitor (iOS/Android)
 - Includes `scripts/validate-project.sh` — automated health check
 
@@ -401,7 +415,7 @@ node skills/phaser-playtest/scripts/playtest.mjs --project .
 [PASS] page loads — HTTP 200
 [PASS] canvas created — 800x600
 [PASS] Phaser game instance found — window.__PHASER_GAME__
-[INFO] renderer — WEBGL (Phaser 4.0.0 RC7)
+[INFO] renderer — WEBGL (Phaser 4.2.1)
 [PASS] active scenes — GameScene(43 objects)
 [PASS] frame rate — median 60 fps, 5th pct 59 fps (91 frames)
 [PASS] canvas renders content — 333 distinct colours, 5.6% non-background
@@ -568,6 +582,9 @@ Generates a comprehensive 13-section Game Design Document: game overview, core l
 | `/phaser-build` | Production build and deployment prep |
 | `/phaser-gdd [genre]` | Generate a comprehensive 13-section Game Design Document |
 | `/phaser-analyze` | Analyze an existing project for architecture, performance, and code quality |
+| `/phaser-brainstorm [idea]` | Shape a game idea into something buildable and correctly scoped |
+| `/phaser-release [check\|prepare\|ship]` | Run the release gate and prepare the game for players |
+| `/phaser-feedback <paste>` | Triage player feedback, reproduce it, fix it, and verify |
 
 ---
 
@@ -576,7 +593,7 @@ Generates a comprehensive 13-section Game Design Document: game overview, core l
 | Hook | Event | Purpose |
 |---|---|---|
 | **v3 API Guard** | PreToolUse (Write/Edit) | Catches deprecated Phaser 3 APIs (`Geom.Point`, `Math.PI2`, `Structs.Map`, etc.) before code is saved |
-| **Project Detector** | SessionStart | Detects Phaser projects, shows available agents/commands/skills |
+| **Project Detector** | SessionStart | Detects Phaser projects, shows available agents/commands/skills, and warns when Phaser is pinned to a pre-release |
 
 ---
 
@@ -584,11 +601,13 @@ Generates a comprehensive 13-section Game Design Document: game overview, core l
 
 | Topic | Value |
 |---|---|
-| Install | `npm install phaser@beta` |
-| Latest version | v4.0.0-rc.7 |
+| Install | `npm install phaser` — **not** `phaser@beta`, whose tag still points at `4.0.0-rc.7` |
+| Latest version | v4.2.1 (Giedi) |
+| Effects | Filters replaced FX *and* masks. Game objects need `enableFilters()` first; cameras do not |
+| Masking | `BitmapMask` and `createGeometryMask()` are gone. Use a camera viewport or `filters.internal.addMask()`. There is no `camera.setScissor()` |
 | Scaffold | `npm create @phaserjs/game@latest` |
 | Renderer | "Phaser Beam" (new WebGL, up to 16x faster filters on mobile) |
-| TypeScript types | `typeRoots: ["./node_modules/phaser/types"]`, `types: ["Phaser"]` |
+| TypeScript types | Resolved automatically via Phaser's `exports` map — use `moduleResolution: "bundler"` and `import Phaser from 'phaser'`. The v3 `typeRoots`/`types: ["Phaser"]` pair breaks v4 builds. |
 | Core API vs v3 | Mostly identical (scenes, physics, input, audio, cameras) |
 
 ---
@@ -637,7 +656,10 @@ phaser4-gamedev/
 │   ├── phaser-validate.md
 │   ├── phaser-build.md
 │   ├── phaser-gdd.md
-│   └── phaser-analyze.md
+│   ├── phaser-analyze.md
+│   ├── phaser-brainstorm.md
+│   ├── phaser-release.md
+│   └── phaser-feedback.md
 ├── hooks/
 │   ├── hooks.json
 │   └── scripts/
@@ -664,7 +686,12 @@ phaser4-gamedev/
 │   ├── phaser-saveload/     save/load, auto-save, versioning
 │   ├── phaser-mobile/       Scale Manager, Capacitor, PWA, device profiles
 │   ├── phaser-gdd/          Game Design Document generation
-│   └── phaser-analyze/      brownfield project analysis + automated script
+│   ├── phaser-analyze/      brownfield project analysis + automated script
+│   ├── phaser-brainstorm/   concept shaping, hooks, honest scope calibration
+│   ├── phaser-fx/           filters, masks, lights, stencils, Mesh2D, shaders
+│   ├── phaser-particles/    emitters, zones, gravity wells + 12 worked recipes
+│   ├── phaser-release/      readiness gate, versioning, store presence
+│   └── phaser-feedback/     player feedback → failing scenario → fix → reply
 └── scripts/
     └── validate-plugin.sh
 ```

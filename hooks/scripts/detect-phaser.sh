@@ -63,8 +63,20 @@ wrap_list "${COMMANDS# }" "     "
 echo "   Skills:"
 wrap_list "${SKILLS# }" "     "
 echo ""
-echo "   Workflow: /phaser-gdd → /phaser-new → build → /phaser-playtest → /phaser-build"
+echo "   Workflow: /phaser-brainstorm → /phaser-gdd → /phaser-new → build"
+echo "             → /phaser-playtest → /phaser-release → /phaser-feedback ⟲"
 echo "   Verify at runtime, not just at compile time: /phaser-playtest runs the game headless."
+echo "   Player feedback goes through /phaser-feedback — it becomes a failing test, then a fix."
+
+# Phaser 4 is stable. The `beta` dist-tag still points at 4.0.0-rc.7, so a project
+# installed from it is older than a plain `npm install phaser`.
+case "$PHASER_VERSION" in
+  *rc*|*beta*|*alpha*)
+    echo ""
+    echo "   ⚠️  Phaser is pinned to a pre-release (${PHASER_VERSION})."
+    echo "      Phaser 4 is stable — run: npm install phaser@latest"
+    ;;
+esac
 echo ""
 
 exit 0

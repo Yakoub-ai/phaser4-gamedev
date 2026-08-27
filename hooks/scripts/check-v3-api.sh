@@ -54,6 +54,38 @@ if echo "$CONTENT" | grep -q "FacebookInstant"; then
   WARNINGS+=("⚠️  Phaser v3 API detected: FacebookInstant\n   → Facebook Instant Games plugin removed in Phaser 4.")
 fi
 
+# Removals verified against the Phaser 4.2.1 type definitions. Each of these compiles
+# in a v3 codebase and is simply absent in v4 — the failure is a runtime TypeError or,
+# worse, a silent no-op.
+#
+# Note: the v3 tsconfig recipe (typeRoots + types: ["Phaser"]), which fails on v4 with
+# TS2688, is NOT checked here — this hook only ever sees .ts/.js files, never
+# tsconfig.json. That check lives in skills/phaser-build/scripts/validate-project.sh.
+
+if echo "$CONTENT" | grep -qE "\.(preFX|postFX)\."; then
+  WARNINGS+=("⚠️  Phaser v3 API detected: preFX / postFX\n   → Unified into Filters in Phaser 4.\n   → obj.enableFilters(); obj.filters.internal.addGlow(...)   // was preFX\n   → obj.enableFilters(); obj.filters.external.addBlur(...)   // was postFX\n   → Cameras have .filters directly and need no enableFilters() call.\n   → See skills/phaser-fx/SKILL.md")
+fi
+
+if echo "$CONTENT" | grep -qE "BitmapMask|createBitmapMask\("; then
+  WARNINGS+=("⚠️  Removed in Phaser 4: BitmapMask\n   → The class does not exist in v4 and createBitmapMask() is not a Game Object method.\n   → obj.enableFilters(); obj.filters.internal.addMask(source)\n   → For a rectangular clip, give the content its own camera and use camera.setViewport().\n   → See skills/phaser-fx/SKILL.md")
+fi
+
+if echo "$CONTENT" | grep -qE "\.setScissor\("; then
+  WARNINGS+=("⚠️  Not a Phaser 4 API: camera.setScissor()\n   → No such method on Phaser.Cameras.Scene2D.Camera in v4.\n   → Use camera.setViewport(x, y, width, height) for a rectangular clip.")
+fi
+
+if echo "$CONTENT" | grep -qE "\.tintFill\b"; then
+  WARNINGS+=("⚠️  Phaser v3 API detected: tintFill\n   → v4 separates tint colour from tint mode.\n   → sprite.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL)\n   → Modes: MULTIPLY, FILL, ADD, SCREEN, OVERLAY, HARD_LIGHT, MULTIPLY_TWO")
+fi
+
+if echo "$CONTENT" | grep -qE "\.setPipeline\(|\.resetPipeline\("; then
+  WARNINGS+=("⚠️  Phaser v3 API detected: setPipeline()\n   → The pipeline system was replaced by render nodes in Phaser 4.\n   → Most v3 custom pipelines exist as stock filters now — check skills/phaser-fx/references/filters-api.md first.\n   → For lighting specifically: setPipeline('Light2D') is now setLighting(true).")
+fi
+
+if echo "$CONTENT" | grep -qE "add\.particles\(" && ! echo "$CONTENT" | grep -q "maxParticles"; then
+  WARNINGS+=("⚠️  Particle emitter without maxParticles\n   → An uncapped emitter allocates until the frame budget is gone, and only under load —\n     which is why it ships and then shows up as a player report.\n   → Add maxParticles to the config. Steady-state count is lifespan / frequency * quantity.\n   → See skills/phaser-particles/SKILL.md")
+fi
+
 if echo "$CONTENT" | grep -q "Phaser\.Create\.GenerateTexture\|Create\.GenerateTexture"; then
   WARNINGS+=("⚠️  Phaser v3 API detected: Create.GenerateTexture\n   → Use Graphics.generateTexture() instead:\n   const gfx = this.add.graphics(); gfx.fillRect(0,0,w,h); gfx.generateTexture('key', w, h); gfx.destroy();")
 fi
@@ -65,16 +97,16 @@ if echo "$CONTENT" | grep -qE "\.setCrop\("; then
   fi
 fi
 
-# ─── RC6 → RC7 behavioral drift detections ──────────────────────────────────
-# These are heuristics for patterns that silently broke between Phaser 4 RC releases.
+# ─── Phaser 4 runtime-gotcha detections ─────────────────────────────────────
+# Heuristics for call shapes that compile cleanly and misbehave at runtime.
 # All warn-only — do NOT block the write (exit 0 below preserves that).
 
 if echo "$CONTENT" | grep -qE "createGeometryMask\(|setMask\(.*createGeometryMask"; then
-  WARNINGS+=("⚠️  Phaser 4 RC7 drift: geometry mask detected\n   → Geometry masks for rectangular clipping broke in RC7. Use Camera scissor instead (\`camera.setScissor(x,y,w,h)\`).\n   → Alpha and bitmap masks are still valid; only rectangular geometry masks are affected.\n   → See skills/phaser-migrate/references/rc6-to-rc7-changes.md section 1.")
+  WARNINGS+=("⚠️  Removed Phaser 3 API: geometry/bitmap mask\n   → createGeometryMask() and createBitmapMask() do not exist in Phaser 4, and BitmapMask was removed entirely.\n   → Rectangular clip: give the content its own camera and use camera.setViewport(x, y, w, h). There is no camera.setScissor() in v4.\n   → Arbitrary shape: obj.enableFilters(); obj.filters.internal.addMask(source)\n   → See skills/phaser-migrate/references/runtime-gotchas.md section 1.")
 fi
 
 if echo "$CONTENT" | grep -qE "setCollisionByProperty\([^,)]+,\s*true\)"; then
-  WARNINGS+=("⚠️  Phaser 4 RC7 drift: setCollisionByProperty two-arg form\n   → The second-arg boolean polarity changed in RC7. Re-verify against current node_modules/phaser/types/.\n   → See skills/phaser-migrate/references/rc6-to-rc7-changes.md section 6.")
+  WARNINGS+=("⚠️  Implicit setCollisionByProperty arguments\n   → Signature is (properties, collides?, recalculateFaces?, layer?). Pass recalculateFaces explicitly, or players snag on seams between solid tiles.\n   → layer.setCollisionByProperty({ collides: true }, true, true)\n   → See skills/phaser-migrate/references/runtime-gotchas.md section 5.")
 fi
 
 if echo "$CONTENT" | grep -qE "^export const (GAME_WIDTH|GAME_HEIGHT)\b"; then
@@ -82,7 +114,7 @@ if echo "$CONTENT" | grep -qE "^export const (GAME_WIDTH|GAME_HEIGHT)\b"; then
 fi
 
 if echo "$CONTENT" | grep -qE "\.onFloor\(\)"; then
-  WARNINGS+=("⚠️  Phaser 4 RC7 drift: body.onFloor() timing changed\n   → body.onFloor() returns true one physics step later in RC7. For jump-landed detection prefer: body.blocked.down || body.onFloor()\n   → See skills/phaser-migrate/references/rc6-to-rc7-changes.md section 6.")
+  WARNINGS+=("⚠️  body.onFloor() can resolve a frame late\n   → onFloor() comes from the tile/world pass and may land a step after blocked.down. For jump-landed detection prefer: body.blocked.down || body.onFloor()\n   → A single dropped frame here is 16ms of eaten jump input at 60fps.\n   → See skills/phaser-migrate/references/runtime-gotchas.md section 6.")
 fi
 
 # Multi-line heuristic: close+delayedCall+open pattern (UI flash anti-pattern)

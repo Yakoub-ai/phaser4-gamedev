@@ -6,17 +6,21 @@
 agents/          — 5 specialized subagent definitions (Markdown with YAML frontmatter)
                    phaser-architect, phaser-coder, phaser-debugger,
                    phaser-asset-advisor, phaser-playtester
-commands/        — Slash command definitions (7 commands)
-                   phaser-new, phaser-run, phaser-playtest, phaser-validate,
-                   phaser-build, phaser-gdd, phaser-analyze
+commands/        — Slash command definitions (10 commands)
+                   phaser-brainstorm, phaser-gdd, phaser-new, phaser-run,
+                   phaser-playtest, phaser-validate, phaser-build, phaser-analyze,
+                   phaser-release, phaser-feedback
 skills/          — Each skill has SKILL.md + references/ + optional examples/ and scripts/
-                   21 skills: 16 lifecycle/system skills (phaser-init, phaser-scene,
-                   phaser-gameobj, phaser-physics, phaser-audio, phaser-animation,
-                   phaser-input, phaser-tilemap, phaser-ui, phaser-build, phaser-migrate,
-                   phaser-matter, phaser-saveload, phaser-mobile, phaser-gdd,
-                   phaser-analyze), phaser-playtest (runtime verification), and 4
-                   portable mirrors of the subagents (phaser-architect, phaser-coder,
-                   phaser-debugger, phaser-asset-advisor)
+                   26 skills:
+                   • 21 lifecycle/system skills — phaser-brainstorm, phaser-gdd,
+                     phaser-init, phaser-scene, phaser-gameobj, phaser-physics,
+                     phaser-matter, phaser-audio, phaser-animation, phaser-input,
+                     phaser-tilemap, phaser-ui, phaser-fx, phaser-particles,
+                     phaser-saveload, phaser-mobile, phaser-build, phaser-release,
+                     phaser-migrate, phaser-analyze, phaser-feedback
+                   • phaser-playtest — runtime verification harness
+                   • 4 portable mirrors of the subagents (phaser-architect,
+                     phaser-coder, phaser-debugger, phaser-asset-advisor)
 hooks/           — SessionStart detector + PreToolUse v3 API guard
                    hooks.json defines hook configuration; scripts/ contains detect-phaser.sh
 .claude-plugin/  — plugin.json + marketplace.json
@@ -28,15 +32,25 @@ scripts/         — Validation and utility scripts
 ## The Workflow This Plugin Encodes
 
 ```
-/phaser-gdd ──► /phaser-new ──► phaser-coder ──► /phaser-playtest ──► /phaser-build
-   plan            scaffold        implement        VERIFY RUNNING        ship
-     │                                 ▲                  │
-     │                                 └──── fix ─────────┘
-     └── acceptance criteria ─────────────────► playtest scenarios
+/phaser-brainstorm ──► /phaser-gdd ──► /phaser-new ──► phaser-coder
+     shape & scope         plan          scaffold        implement
+                             │                               │
+                             │                               ▼
+                             │                       /phaser-playtest ──► /phaser-release
+                             │                        VERIFY RUNNING           ship
+                             │                          ▲       │                │
+                             │                          └─ fix ─┘                ▼
+                             │                              ▲            /phaser-feedback
+                             │                              └──── repro ──────┘
+                             └── acceptance criteria ───────────► playtest scenarios
 ```
 
 The gate that matters is `/phaser-playtest`. Every other step can succeed on a game
 that shows a black screen; this is the only one that cannot.
+
+After release the loop closes: `/phaser-feedback` turns a player's prose into a failing
+playtest scenario, then a fix, and the scenario stays as a regression test. That is what
+makes feedback compound rather than recur.
 
 ## Conventions
 
@@ -86,6 +100,7 @@ Rules:
 - A green `tsc` plus a failing playtest means the work is **not** done.
 - Every scaffolded project gets `if (import.meta.env.DEV) (window as any).__PHASER_GAME__ = game;`
   next to `new Phaser.Game(config)`. Dev-only, one line, and it unlocks every state assertion.
+  It requires `"types": ["vite/client"]` in tsconfig — without it the line fails `tsc --noEmit`.
 - Before any deploy, run `--mode build`. That is where base-path and bundling failures appear.
 - Headless FPS is software-rendered: treat it as a regression signal between runs, not
   a real-device measurement.
@@ -148,8 +163,8 @@ bash scripts/validate-plugin.sh
 ```
 
 It discovers agents, commands, and skills from disk (no hardcoded lists to drift) and
-checks: JSON manifests parse; **the version matches across all manifests and all 21
-skills**; agent and skill frontmatter is complete and `name` matches the directory;
+checks: JSON manifests parse; **the version matches across all manifests and every
+skill**; agent and skill frontmatter is complete and `name` matches the directory;
 every agent that mentions Context7 actually grants the MCP tools in its `tools`
 allowlist; portable skill mirrors match their agent definitions; shell and JS scripts
 parse; every `${CLAUDE_PLUGIN_ROOT}` and cross-skill file reference resolves; and the
@@ -162,9 +177,22 @@ bash skills/phaser-build/scripts/validate-project.sh /path/to/game   # structure
 node skills/phaser-playtest/scripts/playtest.mjs --project /path/to/game   # runtime
 ```
 
+If Playwright cannot launch because the installed package expects a browser revision the
+machine does not have, point at the Chromium already present rather than re-downloading:
+
+```bash
+node skills/phaser-playtest/scripts/playtest.mjs --project . --browser /usr/bin/chromium
+```
+
 ## Key Phaser 4 Facts
 
-- **Install:** `npm install phaser@beta`
-- **Version:** v4.0.0-rc.7
-- **Renderer:** Phaser Beam (WebGL)
-- **Types:** Configure `typeRoots` + `types: ["Phaser"]` in tsconfig.json
+- **Install:** `npm install phaser`. **Never `phaser@beta`** — that dist-tag still points
+  at `4.0.0-rc.7`, which is older than stable.
+- **Version:** v4.2.1 (Giedi). 4.0.0 was the first stable; 4.1.0 added the ESM default
+  export; 4.2.0 added `Mesh2D`, `Stencil`, cone lights and second tints.
+- **Renderer:** Phaser Beam (WebGL). Canvas is deprecated and supports none of v4's new
+  rendering features.
+- **Effects:** Filters replaced FX *and* masks. Game objects need `enableFilters()` before
+  `.filters` is non-null; cameras have no such method. `BitmapMask`,
+  `createGeometryMask()` and `camera.setScissor()` do not exist in v4.
+- **Types:** Shipped via Phaser's `exports` map. Use `moduleResolution: "bundler"` + `import Phaser from 'phaser'`. Never set `typeRoots`/`types: ["Phaser"]` — that v3 recipe fails on v4 with `TS2688`.

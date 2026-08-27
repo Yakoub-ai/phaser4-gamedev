@@ -1,18 +1,18 @@
 ---
 name: phaser-migrate
-description: This skill should be used when the user asks to "migrate from Phaser 3", "upgrade to Phaser 4", "convert my v3 game", "Phaser 3 to 4 migration", "update Phaser version", "my Phaser 3 game broke after upgrading", "behavior changed after RC upgrade", "RC6 to RC7 migration", or has code that uses deprecated or removed Phaser 3 APIs or behavior that silently drifted between Phaser 4 RC releases.
-version: 0.6.0
+description: This skill should be used when the user asks to "migrate from Phaser 3", "upgrade to Phaser 4", "convert my v3 game", "Phaser 3 to 4 migration", "update Phaser version", "my Phaser 3 game broke after upgrading", "behavior changed after upgrading Phaser 4", "upgrade Phaser 4.0 to 4.2", or has code that uses deprecated or removed Phaser 3 APIs or behavior that silently drifted between Phaser 4 RC releases.
+version: 0.7.0
 ---
 
 # Phaser 3 → Phaser 4 Migration
 
-Migrating from Phaser 3 to Phaser 4 is mostly straightforward. The core public API is preserved. This skill covers every breaking change and how to fix it — AND also covers RC-to-RC behavioral drift within Phaser 4 (e.g., RC6 → RC7) where APIs silently changed semantics between RC releases.
+Migrating from Phaser 3 to Phaser 4 is mostly straightforward. The core public API is preserved. This skill covers every breaking change and how to fix it — AND also covers moving between Phaser 4 point releases (4.0 → 4.1 → 4.2), plus the runtime behaviour that compiles cleanly and still surprises you.
 
 ## Step 1 — Update the Package
 
 ```bash
 npm uninstall phaser
-npm install phaser@beta
+npm install phaser
 ```
 
 Verify installed version:
@@ -20,7 +20,7 @@ Verify installed version:
 node -e "const p = require('phaser'); console.log(p.VERSION)"
 ```
 
-Should print `4.0.0-rc.7` (or later RC).
+Should print `4.2.1` (or later RC).
 
 ## Step 2 — Scan for Breaking Changes
 
@@ -55,7 +55,7 @@ grep -rn "spine\|Spine" src/ -i
 grep -rn "phaser-ie9" . 
 
 # 10. WebGL geometry masks (stencil-based masks changed in Phaser 4 — use scissor/viewport instead)
-grep -rn "createGeometryMask\|setBitmapMask\|setMask\b\|clearMask" src/ 
+grep -rn "createGeometryMask\|createBitmapMask\|BitmapMask\|setMask\b\|clearMask\|setScissor" src/ 
 ```
 
 ## Step 3 — Apply Fixes
@@ -200,28 +200,35 @@ import Phaser from 'phaser/src/phaser-ie9.js';
 import Phaser from 'phaser';
 ```
 
-### Fix 9: WebGL Geometry Masks → Scissor / Viewport Clipping
+### Fix 9: Masks → Camera Viewport or the Mask Filter
 
-Phaser 4 changed how WebGL masks work. Stencil-buffer geometry masks from v3 either silently no-op or produce incorrect results in v4's Beam renderer. Camera viewport clipping is the correct replacement for rectangular clip regions.
+Phaser 4 removed the v3 masking classes. `BitmapMask` is gone entirely, and neither
+`createGeometryMask()` nor `createBitmapMask()` exists on Game Objects. `GeometryMask`
+survives as a class but only the (deprecated) Canvas renderer consumes it — under Beam
+it does nothing.
 
 ```typescript
 // BEFORE (Phaser 3) — geometry mask via stencil buffer
 const shape = this.add.graphics().fillRect(x, y, w, h);
-const mask = shape.createGeometryMask();
+const mask = shape.createGeometryMask();   // removed in v4
 targetSprite.setMask(mask);
 
-// AFTER (Phaser 4) — use camera viewport for rectangular clips
-// For the main camera:
-this.cameras.main.setViewport(x, y, w, h);
-// Restore to full canvas:
-const { width, height } = this.scale;
-this.cameras.main.setViewport(0, 0, width, height);
+// AFTER (Phaser 4), rectangular clip — give the content its own camera:
+const clipCam = this.cameras.add(x, y, w, h);
+clipCam.ignore(this.children.list.filter(c => c !== targetSprite));
+this.cameras.main.ignore(targetSprite);
 
-// For non-rectangular clips, use a custom render pipeline instead (advanced).
-// Bitmap masks on sprites still work; geometry masks do not.
+// AFTER (Phaser 4), arbitrary shape — the Mask filter:
+targetSprite.enableFilters();                  // filters is null until you call this
+targetSprite.filters!.internal.addMask(shape); // texture key or GameObject
+targetSprite.filters!.internal.addMask(shape, true);  // inverted
 ```
 
-If you need a mask on a non-camera object (e.g. a sprite with a custom clip region), use a bitmap mask with a Graphics texture rather than a geometry mask.
+There is **no `camera.setScissor()`** in Phaser 4 — that method does not exist on
+`Phaser.Cameras.Scene2D.Camera`. Use `setViewport()`.
+
+`Phaser.Actions.AddMaskShape()` is a convenience that creates a Shape and wires it up as
+a mask in one call — it is the replacement for the v3 Circle FX.
 
 ## Step 4 — Update TypeScript Config
 
@@ -230,16 +237,26 @@ If using TypeScript, ensure `tsconfig.json` is correct for v4:
 ```json
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,
-    "typeRoots": ["./node_modules/phaser/types"],
-    "types": ["Phaser"]
-  }
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["src"]
 }
 ```
+
+Phaser 4 publishes its types through the `exports` map in its own `package.json`, so a
+modern resolver picks them up from a plain `import Phaser from 'phaser';` with no extra
+config.
+
+> **Delete `typeRoots: ["./node_modules/phaser/types"]` and `types: ["Phaser"]` if your v3
+> tsconfig has them.** Against Phaser 4 that pair fails with
+> `TS2688: Cannot find type definition file for 'Phaser'` — v4 ships one `types/phaser.d.ts`
+> file, which is not a valid type-root package.
 
 ## Step 5 — Verify and Test
 
@@ -259,8 +276,8 @@ Check in browser:
 
 ## Quick Migration Checklist
 
-- [ ] `npm install phaser@beta` run
-- [ ] `tsconfig.json` updated with `typeRoots` + `types`
+- [ ] `npm install phaser` run
+- [ ] `tsconfig.json` v3-era `typeRoots` + `types: ["Phaser"]` removed; `moduleResolution` is `bundler`/`node16`
 - [ ] All `Phaser.Geom.Point` replaced with `Phaser.Math.Vector2`
 - [ ] All `Math.PI2` replaced with `Math.TAU`
 - [ ] All `Phaser.Structs.Map/Set` replaced with native `Map`/`Set`
@@ -269,12 +286,13 @@ Check in browser:
 - [ ] `TileSprite.setCrop()` calls replaced or removed
 - [ ] `Phaser.Create.GenerateTexture` replaced with Graphics/textures
 - [ ] `phaser-ie9` imports replaced with `phaser`
-- [ ] WebGL geometry masks (`createGeometryMask` / `setMask`) replaced with camera viewport or bitmap masks
+- [ ] WebGL masks (`createGeometryMask` / `createBitmapMask` / `BitmapMask`) replaced with a camera viewport or `filters.internal.addMask()`; no `camera.setScissor()` calls
 - [ ] `npx tsc --noEmit` passes
-- [ ] Game runs in browser without console errors
+- [ ] `node skills/phaser-playtest/scripts/playtest.mjs --project .` passes — a green `tsc` says nothing about whether the migrated game renders
 
 ## Additional Resources
 
 ### Reference Files
 - **`references/v3-to-v4-changes.md`** — Complete changelog of all Phaser v3→v4 breaking changes, including renderer internals, deprecated APIs, and behavior differences
-- **`references/rc6-to-rc7-changes.md`** — Behavioral drift between Phaser 4 RC releases (masks, animations, camera, tilemap, groups, scene events, scale manager). Read when upgrading RC versions OR when code that worked in an earlier RC silently misbehaves.
+- **`references/runtime-gotchas.md`** — Behaviour that compiles cleanly and still surprises you: masking, animation state switches, camera follow, tilemap collision, `onFloor()` timing, cross-scene wiring, scale manager. Read when the compiler is happy but the game is not.
+- **`references/v4-release-notes.md`** — What shipped in 4.0.0, 4.1.0, 4.2.0 and 4.2.1, and what to change when moving between them. Read when upgrading Phaser 4 point releases, or to find out whether a bug you are chasing is already fixed upstream.

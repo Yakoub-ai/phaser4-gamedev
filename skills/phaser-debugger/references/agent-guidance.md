@@ -69,6 +69,23 @@ Add `--headed` to watch it, `--scenario FILE` to drive the exact input sequence 
 
 **Re-run the harness after the fix.** A fix you have not re-run is a hypothesis, not a fix.
 
+### Reproducing the awkward bug shapes
+
+The default run catches boot failures. These flags catch the rest, and each one answers a different kind of report:
+
+| The report | The invocation |
+|---|---|
+| "it only happens sometimes" | `--repeat 10` — classifies it as clean, INTERMITTENT (n/N), or consistent |
+| an intermittent bug, cause unknown | add `--seed 42` — consistent under a seed means an RNG path; still intermittent means timing |
+| "it gets slower the longer I play" | `--heap` with a scenario that restarts the scene repeatedly |
+| a bug deep in the game | an `eval` step to set the state directly, rather than playing to it |
+| "X gets stuck" | a `sample` step asserting `range` moved |
+| "it broke after the update" | run the same scenario against `HEAD~1` before hunting the bug |
+
+`--repeat` is the one that changes what is diagnosable. "Sometimes" is a frequency claim, and a single run can neither confirm nor deny it — which is why these reports otherwise sit unactioned.
+
+If the bug came from a **player** rather than from a code change, read `skills/phaser-feedback/SKILL.md` first: not every report is a defect, and a tuning complaint worked as a bug wastes the cycle.
+
 ### TypeScript as Pre-Flight
 
 Run `npx tsc --noEmit` BEFORE claiming a fix works. TypeScript compile errors catch 30–40% of Phaser bugs before runtime — wrong body type, missing method, null not handled. Useful flags:
@@ -411,7 +428,7 @@ Check in order:
      // ... state machine only runs outside cinematic mode
    }
    ```
-3. **Clear the flag in the `ANIMATION_COMPLETE_KEY` handler**, not synchronously after calling `play()` — the completion event fires one tick after the last frame renders. In RC7, this event fires one tick later than it did in RC6 (also documented in `skills/phaser-migrate/references/rc6-to-rc7-changes.md`).
+3. **Clear the flag in the `ANIMATION_COMPLETE_KEY` handler**, not synchronously after calling `play()` — the completion event fires one tick after the last frame renders. The event is not guaranteed to land before the next update() tick (also documented in `skills/phaser-migrate/references/runtime-gotchas.md`).
 4. **Canonical pattern in** `skills/phaser-animation/references/state-machine-patterns.md`.
 
 *How to diagnose:* Add a `console.log` inside the `update()` state-machine branch that calls `play()`. If it logs on the frame immediately after your forced play, the state machine is overwriting it.
@@ -531,7 +548,7 @@ Check in order:
      return;
    }
    dynTex.draw(sourceKey, x, y);
-   dynTex.render();  // REQUIRED in Phaser 4 — also documented in skills/phaser-migrate/references/rc6-to-rc7-changes.md
+   dynTex.render();  // REQUIRED in Phaser 4 — also documented in skills/phaser-migrate/references/runtime-gotchas.md
    ```
 3. **Also verify the asset is in `preload()`.** Boot and preloader scenes often load a minimal asset set; if a new source texture was added but its `this.load.*` call was omitted from `preload()`, the key is absent at draw time.
 

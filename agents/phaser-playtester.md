@@ -83,6 +83,12 @@ const game = new Phaser.Game(config);
 if (import.meta.env.DEV) (window as any).__PHASER_GAME__ = game;
 ```
 
+> **`import.meta.env` needs Vite's client types.** Add `"types": ["vite/client"]` to
+> `tsconfig.json` `compilerOptions`, or this line fails `npx tsc --noEmit` with
+> `TS2339: Property 'env' does not exist on type 'ImportMeta'` — which the TypeScript
+> gate will then reject.
+
+
 This is a one-line, dev-only change. Apply it, then re-run. See
 `references/instrumenting-games.md` for the fuller test surface (typed hooks, seeded
 RNG, state injection via query params) when scenarios need it.
@@ -103,6 +109,26 @@ Scenarios press keys and click the canvas as a player would. Prefer this over ca
 internal methods directly — it exercises the input wiring, which is itself a common
 failure point.
 
+Match the construct to the claim, rather than reaching for `wait` + `expect` every time:
+
+| The claim | The construct |
+|---|---|
+| "it happens sometimes" | `--repeat 10`, then `--seed 42` to split RNG from timing |
+| "X gets stuck" | `sample` + `expect: { stat: 'range', atLeast: n }` |
+| "it takes too long" / "never finishes" | `waitFor` with a `timeout` |
+| "it drops for no reason" | `sample` + `expect: { stat: 'delta', equals: 0 }` |
+| "it slows down over time" | `--heap` plus a `repeat` block that restarts the scene |
+| "the controls fight me" | `hold` with several keys — diagonals are their own input path |
+| a state deep in the game | `eval` to set it directly, or `scene` to jump to a level |
+
+`eval` is what makes deep bugs testable at all: setting `player.hp = 1` and spawning the
+boss is seconds, where playing to that state is minutes and flaky. Use it to *reach* the
+state, then drive real input from there.
+
+Assert positions with `within: { of, tolerance }`, never `equals` — float coordinates do
+not land on round numbers, and an `equals` assertion on one is a guaranteed false
+failure.
+
 ### 5. Report honestly
 
 - State results exactly as the harness reports them. Never round a failure up to
@@ -121,6 +147,10 @@ rather than duplicating its work.
 
 Re-run the harness after every fix. A fix you have not re-run is a hypothesis.
 
+For a bug that was **intermittent**, one green run is not verification — it is the same
+coin flip that hid the bug. Re-run with `--repeat` at least as many times as it took to
+reproduce.
+
 ## Reading Failures
 
 | Failure | Look at first |
@@ -130,7 +160,12 @@ Re-run the harness after every fix. A fix you have not re-run is a hypothesis.
 | `canvas renders content` blank, scenes active | Off-camera positions, `alpha: 0`, depth ordering, camera not following |
 | `scenes render content` warns empty | `create()` returned early — often an exception swallowed by a `try` |
 | `all assets load` fails with `text/html` | Path typo, or asset in `src/` instead of `public/` |
-| `frame rate` low | Uncapped particles, no pooling, per-frame allocation — escalate to `/phaser-analyze` |
+| `frame rate` low | Uncapped particles (missing `maxParticles`), no pooling, per-frame allocation, or a filter added every frame instead of once — escalate to `/phaser-analyze` |
+| `scenario stability: INTERMITTENT` | A race or an RNG path. Re-run with `--seed`; consistent under a seed means RNG, still intermittent means timing |
+| `scenario stability: failed in all N` | Not a flake at all. The repro is exact — fix it directly |
+| `heap growth` warns | Listeners or objects surviving a scene restart — `events.on` without `off`, timers outliving the scene |
+| `Phaser release` warns (pre-release) | The project is pinned to `phaser@beta`, which is older than stable. `npm install phaser@latest` |
+| `renderer backend` warns (Canvas) | WebGL context failed, or `type: Phaser.CANVAS`. Filters, stencils and lights are WebGL-only and will silently do nothing |
 
 ## Scope Discipline
 
@@ -151,3 +186,14 @@ Re-run the harness after every fix. A fix you have not re-run is a hypothesis.
   not reproduce iOS-specific WebGL or audio-unlock bugs.
 - Nothing here judges whether the game is fun, balanced, or readable. That needs a
   human, and you should say so when the user's question is really about feel.
+- A scenario proves the game does what the scenario says. It cannot tell you the
+  scenario asked the right question — which is why a repro written from a bug report
+  must be watched failing before the fix, not just passing after it.
+
+## When the input is a player's report
+
+If you are here because someone reported a bug rather than because code just changed,
+read `skills/phaser-feedback/SKILL.md` first. Not every report is a defect: "the boss is
+impossible" is a tuning complaint with no repro and no fix you get to choose, and
+treating it as a bug means hunting damage-calculation code that is fine. Triage before
+writing the scenario.

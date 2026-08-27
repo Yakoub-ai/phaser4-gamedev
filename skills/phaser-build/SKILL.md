@@ -1,7 +1,7 @@
 ---
 name: phaser-build
 description: This skill should be used when the user asks to "build my game", "run my Phaser game", "start dev server", "deploy my game", "fix build errors", "configure Vite for Phaser", "game won't build", "TypeScript errors in Phaser", "publish to itch.io", or needs to compile, run, troubleshoot, or deploy a Phaser 4 project.
-version: 0.6.0
+version: 0.7.0
 ---
 
 # Phaser 4 Build and Deployment
@@ -45,14 +45,21 @@ Fix all type errors before shipping. Common Phaser 4 TypeScript issues:
 
 **Missing Phaser types:**
 ```json
-// tsconfig.json — REQUIRED for Phaser 4 types to work
+// tsconfig.json — Phaser 4 resolves its own types via its exports map
 {
   "compilerOptions": {
-    "typeRoots": ["./node_modules/phaser/types"],
-    "types": ["Phaser"]
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "skipLibCheck": true
   }
 }
 ```
+
+Then import it explicitly in each file: `import Phaser from 'phaser';`
+
+If you see `TS2688: Cannot find type definition file for 'Phaser'`, the project is carrying
+the v3-era `typeRoots` + `types: ["Phaser"]` pair. Delete both keys — Phaser 4 ships a single
+`types/phaser.d.ts`, which is not a valid type-root package.
 
 **`this.input.keyboard` nullable:**
 ```typescript
@@ -83,7 +90,7 @@ const game = this.scene.get('GameScene') as GameScene;
 ### "Cannot find module 'phaser'"
 
 ```bash
-npm install phaser@beta   # NOT npm install phaser (that's Phaser 3)
+npm install phaser   # installs Phaser 4 (latest stable). Do NOT use phaser — that tag still points at 4.2.1
 ```
 
 ### Asset 404 Errors (game loads but assets missing)
@@ -175,6 +182,10 @@ export default defineConfig({
 **`base: './'` is critical** for itch.io, GitHub Pages, and any subdirectory deployment. Without it, assets load from `/` (root) which breaks on subdirectory hosts.
 
 ## Deployment Targets
+
+> This section covers the mechanics of getting a build onto a host. For deciding whether
+> the game is *ready* — the readiness gate, versioning, store presence, launch day — see
+> `skills/phaser-release/`.
 
 ### itch.io
 

@@ -199,14 +199,14 @@ this.backdrop = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.75
 
 Any overlay scene (PauseScene, LevelUpScene, SettingsScene, GameOverScene) that sizes its backdrop from `GAME_WIDTH` / `GAME_HEIGHT` imported constants will leak past the right edge as soon as the canvas grows — even once. Use the live-camera + resize-listener pattern above.
 
-## Cross-Scene Input Initialization (Phaser 4 RC7)
+## Cross-Scene Input Initialization
 
 For shared input layers (virtual joystick, global keyboard bindings, gamepad service) that span multiple gameplay scenes, listen on the **target scene's `READY` event** — NOT on the launcher scene's `CREATE`.
 
-In RC7, the launcher's `CREATE` fires before the target scene's input plugins are fully attached. Calling `this.input.keyboard!.on(...)` from a `CREATE` listener is a silent no-op: the keyboard plugin is still initializing.
+The launcher's `CREATE` fires before the target scene's input plugins are fully attached. Calling `this.input.keyboard!.on(...)` from a `CREATE` listener is a silent no-op: the keyboard plugin is still initializing.
 
 ```typescript
-// BEFORE (worked in RC6, fails silently in RC7):
+// FRAGILE — fires before the target scene's plugins are attached; references may be null:
 this.scene.launch('InputScene');
 const inputScene = this.scene.get('InputScene');
 inputScene.events.on(Phaser.Scenes.Events.CREATE, () => {
@@ -214,7 +214,7 @@ inputScene.events.on(Phaser.Scenes.Events.CREATE, () => {
   inputScene.input.keyboard!.on('keydown-ESC', this.openPauseMenu, this);
 });
 
-// AFTER (reliable in RC7):
+// RELIABLE — plugins are attached by READY:
 this.scene.launch('InputScene');
 const inputScene = this.scene.get('InputScene');
 inputScene.events.once(Phaser.Scenes.Events.READY, () => {
@@ -224,7 +224,7 @@ inputScene.events.once(Phaser.Scenes.Events.READY, () => {
 
 **Rule of thumb:** `CREATE` fires when the scene's objects start being built; `READY` fires when plugins are fully attached and input bindings are safe to register. For cross-scene wiring, always use `READY`.
 
-See also `skills/phaser-migrate/references/rc6-to-rc7-changes.md` → section 7 for the full RC6/RC7 comparison.
+See also `skills/phaser-migrate/references/runtime-gotchas.md` → section 7 for the full cross-scene init comparison.
 
 ## Scene Plugin Architecture
 

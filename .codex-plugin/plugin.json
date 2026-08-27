@@ -1,6 +1,6 @@
 {
   "name": "phaser4-gamedev",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Phaser 4 game development toolkit with portable skills for scaffolding, architecture, coding, debugging, assets, physics, migration, UI, build, analysis, and headless playtesting.",
   "homepage": "https://github.com/Yakoub-ai/phaser4-gamedev",
   "repository": "https://github.com/Yakoub-ai/phaser4-gamedev",

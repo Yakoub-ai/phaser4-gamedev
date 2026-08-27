@@ -1,7 +1,7 @@
 ---
 name: phaser-debugger
 description: This skill should be used when the user reports a Phaser 4 bug, black screen, missing sprite, failed collision, broken physics, animation issue, crash, console error, performance problem, slow game, save/load issue, mobile runtime issue, or unexpected gameplay behavior.
-version: 0.6.0
+version: 0.7.0
 ---
 
 # Phaser 4 Debugger

@@ -48,8 +48,8 @@ Build the Phaser 4 game for production deployment.
 
 ## Common Build Errors
 
-- **"Cannot find module 'phaser'"** → run `npm install phaser@beta`
-- **TypeScript errors on Phaser types** → check `tsconfig.json` has `typeRoots` and `types: ["Phaser"]`
+- **"Cannot find module 'phaser'"** → run `npm install phaser`
+- **TypeScript errors on Phaser types** → check the file does `import Phaser from 'phaser';` and that `tsconfig.json` uses `moduleResolution: "bundler"`. If it still sets `typeRoots`/`types: ["Phaser"]`, remove them — that pair fails on v4.
 - **Asset 404s in production** → ensure all assets are in `public/` directory
 - **Large bundle size** → check for unused imports; Phaser tree-shakes well with Vite
 

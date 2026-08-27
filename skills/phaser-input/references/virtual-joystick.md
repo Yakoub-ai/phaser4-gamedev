@@ -354,9 +354,9 @@ update(): void {
 }
 ```
 
-### RC7 gotcha: use READY not CREATE for cross-scene wiring
+### Gotcha: use READY, not CREATE, for cross-scene wiring
 
-If gameplay scenes wire additional input handlers onto the InputScene (e.g., a context-specific action button), listen on the InputScene's `READY` event — NOT `CREATE`. In Phaser 4 RC7, `CREATE` fires before the target scene's input plugins are fully attached.
+If gameplay scenes wire additional input handlers onto the InputScene (e.g., a context-specific action button), listen on the InputScene's `READY` event — NOT `CREATE`. `CREATE` fires before the target scene's input plugins are guaranteed to be attached.
 
 ```typescript
 // In a gameplay scene's create():
@@ -366,7 +366,7 @@ inputScene.events.once(Phaser.Scenes.Events.READY, () => {
 });
 ```
 
-See `skills/phaser-migrate/references/rc6-to-rc7-changes.md` → section 7 for the full RC6 vs RC7 comparison, and `skills/phaser-scene/references/scene-patterns.md` → **Cross-Scene Input Initialization (RC7)** for the canonical reference.
+See `skills/phaser-migrate/references/runtime-gotchas.md` → section 7 for the full cross-scene init comparison, and `skills/phaser-scene/references/scene-patterns.md` → **Cross-Scene Input Initialization** for the canonical reference.
 
 ### Don't do this
 

@@ -1,12 +1,12 @@
 ---
 name: phaser-init
 description: This skill should be used when the user asks to "create a Phaser game", "initialize a Phaser 4 project", "scaffold a Phaser project", "set up a new game", "start a Phaser project", "bootstrap a game", "npm create phaser", or wants to start a Phaser 4 project from scratch.
-version: 0.6.0
+version: 0.7.0
 ---
 
 # Phaser 4 Project Initialization
 
-Scaffold a new Phaser 4 (v4.0.0-rc.7) project with TypeScript and Vite.
+Scaffold a new Phaser 4 (v4.2.1) project with TypeScript and Vite.
 
 ## Quick Scaffold (Recommended)
 
@@ -19,7 +19,7 @@ npm create @phaserjs/game@latest
 This interactive CLI supports React, Vue, Angular, Svelte, Next.js, SolidJS, and plain TypeScript.
 For beginners: choose **TypeScript + Vite** when prompted.
 
-After scaffolding, it installs `phaser@beta` automatically. Run:
+After scaffolding, it installs `phaser` automatically. Run:
 
 ```bash
 cd my-game
@@ -36,7 +36,7 @@ Use this when the user needs a custom setup or wants to understand each piece.
 ```bash
 mkdir my-game && cd my-game
 npm init -y
-npm install phaser@beta
+npm install phaser
 npm install -D typescript vite @types/node
 ```
 
@@ -90,18 +90,32 @@ Key configuration points:
 ```json
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,
-    "typeRoots": ["./node_modules/phaser/types"],
-    "types": ["Phaser"]
-  }
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["vite/client"]
+  },
+  "include": ["src"]
 }
 ```
 
-The `typeRoots` and `types` fields are required for Phaser's TypeScript types to work.
+Phaser 4 ships its own types through the `exports` map in its `package.json`, so
+`moduleResolution: "bundler"` (or `"node16"`/`"nodenext"`) resolves them from a plain
+`import Phaser from 'phaser'` with no extra configuration.
+
+`types: ["vite/client"]` is separate and *is* needed: it types `import.meta.env`, which
+the mandatory `__PHASER_GAME__` instrumentation line uses. Without it `npx tsc --noEmit`
+fails with `TS2339: Property 'env' does not exist on type 'ImportMeta'`.
+
+> **Do not add `typeRoots: ["./node_modules/phaser/types"]` with `types: ["Phaser"]`.**
+> That was the Phaser 3 / early-v4-RC recipe. Against Phaser 4.2.1 it fails outright with
+> `TS2688: Cannot find type definition file for 'Phaser'`, because the shipped types are a
+> single `types/phaser.d.ts` file rather than a `Phaser/index.d.ts` type-root package.
+> If you inherited that config, delete both fields.
 
 ### Step 4 — Verify Installation
 
@@ -121,8 +135,8 @@ Expected: browser opens at `http://localhost:5173` showing a dark canvas (or wha
 ## Common Setup Mistakes
 
 - **Assets not loading:** In Vite, assets must be in `public/`. Do NOT import them via `import`. Reference as `'assets/image.png'` (relative to server root).
-- **TypeScript errors on `Phaser.*`:** Missing `typeRoots`/`types` in tsconfig. See Step 3.
-- **`phaser` not found:** Run `npm install phaser@beta` (not `npm install phaser` — that installs Phaser 3).
+- **TypeScript errors on `Phaser.*`:** Import Phaser explicitly (`import Phaser from 'phaser';`) and use `moduleResolution: "bundler"`. If tsconfig still carries `typeRoots`/`types: ["Phaser"]` from a v3-era template, remove them — they break the build on v4. See Step 3.
+- **`phaser` not found:** Run `npm install phaser`. Do not use the `beta` tag — `phaser@beta` still resolves to `4.0.0-rc.7`, which is older than the current stable release.
 - **Black screen:** Check browser console for 404 errors or JS errors.
 
 ## Additional Resources

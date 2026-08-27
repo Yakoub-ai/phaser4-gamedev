@@ -1,7 +1,7 @@
 ---
 name: phaser-gdd
 description: This skill should be used when the user asks to "write a game design document", "create a GDD", "design my game", "document game mechanics", "plan game progression", "define core loop", "art direction", "audio design plan", "monetization strategy", "game concept document", "plan my game before coding", or wants to produce a structured design document for a Phaser 4 game before writing any code.
-version: 0.6.0
+version: 0.7.0
 ---
 
 # Phaser 4 Game Design Document Generator
@@ -207,7 +207,7 @@ Include:
 Pin down the Phaser-specific technical decisions.
 
 Include:
-- **Phaser Version** — `phaser@beta` (v4.0.0-rc.7) unless the user specifies otherwise.
+- **Phaser Version** — `phaser` (v4.2.1 stable) unless the user specifies otherwise.
 - **Physics Engine** — Choose one and justify:
   - **Arcade** — Simple AABB, best for platformers and shooters. Low CPU cost.
   - **Matter.js** — Full rigid-body physics. Use for games needing rotation, joints, or complex collision shapes.
@@ -311,6 +311,11 @@ Once the GDD is finalized, guide the user to the next steps:
 1. **Scaffold the project** — Use `/phaser-new` to generate the base project structure matching the GDD's technical requirements.
 2. **Design the architecture** — Use the **phaser-architect** skill/agent to translate the GDD into a technical architecture: scene graph, class hierarchy, data flow, and system decomposition.
 3. **Start implementing** — Use the **phaser-coder** skill/agent to begin coding scenes, mechanics, and entities as specified in the GDD.
+4. **Verify it runs** — `/phaser-playtest` after each vertical slice. Section 13's automatable acceptance criteria become playtest assertions, which is how the design gets checked rather than merely stated.
+5. **Ship it** — `/phaser-release` runs the readiness gate and prepares the store presence.
+6. **Iterate on what players say** — `/phaser-feedback` turns their reports into failing playtest scenarios, then fixes, then regression tests.
+
+If the user arrived here without a sharpened concept — a genre rather than a hook, or a scope that has not been sized against their available time — send them to `/phaser-brainstorm` first. A GDD written around an unscoped idea documents a project that will not finish.
 
 Remind the user: the GDD is a living document. Update it as the game evolves during development.
 
