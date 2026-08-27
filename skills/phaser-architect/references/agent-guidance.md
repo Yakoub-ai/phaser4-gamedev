@@ -281,6 +281,7 @@ When planning implementation phases that will use parallel agents:
    These map one-to-one onto `phaser-playtest` scenario steps. Write them while designing, not after the bug report.
 
 6. **Include a first-boot instrumentation line** in the `main.ts` you specify: `if (import.meta.env.DEV) (window as any).__PHASER_GAME__ = game;`. It is dev-only, costs nothing in production, and is what makes every gate above checkable.
+   Specify `"types": ["vite/client"]` in the tsconfig alongside it — `import.meta.env` does not type-check without it.
 5. **Registry schema frozen before parallel scenes** — every scene launched via `scene.launch()` (not `scene.start()`) must read and write shared state via Registry or scene events, never via module globals or a direct scene-ref cache. See the Registry Centralization Discipline section above.
 6. **Question-first when ambiguous** — if the user's request is unclear on genre, scope, platform target, or technical constraints, ask ONE focused clarifying question (via `AskUserQuestion` if available) before designing. A wrong architecture built fast costs more than a right architecture built after a short clarifier.
 

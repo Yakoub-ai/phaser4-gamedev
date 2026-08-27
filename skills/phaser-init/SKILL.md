@@ -96,7 +96,8 @@ Key configuration points:
     "moduleResolution": "bundler",
     "strict": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": ["vite/client"]
   },
   "include": ["src"]
 }
@@ -105,6 +106,10 @@ Key configuration points:
 Phaser 4 ships its own types through the `exports` map in its `package.json`, so
 `moduleResolution: "bundler"` (or `"node16"`/`"nodenext"`) resolves them from a plain
 `import Phaser from 'phaser'` with no extra configuration.
+
+`types: ["vite/client"]` is separate and *is* needed: it types `import.meta.env`, which
+the mandatory `__PHASER_GAME__` instrumentation line uses. Without it `npx tsc --noEmit`
+fails with `TS2339: Property 'env' does not exist on type 'ImportMeta'`.
 
 > **Do not add `typeRoots: ["./node_modules/phaser/types"]` with `types: ["Phaser"]`.**
 > That was the Phaser 3 / early-v4-RC recipe. Against Phaser 4.2.1 it fails outright with

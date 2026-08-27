@@ -106,6 +106,16 @@ if [[ -f "$PROJECT_DIR/tsconfig.json" ]]; then
   else
     warn "tsconfig.json should set \"strict\": true — most Phaser null-guard bugs surface here first"
   fi
+
+  # The playtest instrumentation line uses import.meta.env, which does not type-check
+  # without Vite's client types. Only complain if the source actually uses it.
+  if grep -rq "import\.meta\.env" "$PROJECT_DIR/src" 2>/dev/null; then
+    if grep -q "vite/client" "$PROJECT_DIR/tsconfig.json"; then
+      ok "tsconfig.json types include vite/client (import.meta.env is typed)"
+    else
+      error "src/ uses import.meta.env but tsconfig.json lacks \"types\": [\"vite/client\"] — tsc will fail with TS2339"
+    fi
+  fi
 else
   info "No tsconfig.json (JavaScript project — that's fine)"
 fi

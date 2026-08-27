@@ -86,6 +86,7 @@ Rules:
 - A green `tsc` plus a failing playtest means the work is **not** done.
 - Every scaffolded project gets `if (import.meta.env.DEV) (window as any).__PHASER_GAME__ = game;`
   next to `new Phaser.Game(config)`. Dev-only, one line, and it unlocks every state assertion.
+  It requires `"types": ["vite/client"]` in tsconfig — without it the line fails `tsc --noEmit`.
 - Before any deploy, run `--mode build`. That is where base-path and bundling failures appear.
 - Headless FPS is software-rendered: treat it as a regression signal between runs, not
   a real-device measurement.

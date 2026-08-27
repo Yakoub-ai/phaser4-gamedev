@@ -83,6 +83,12 @@ const game = new Phaser.Game(config);
 if (import.meta.env.DEV) (window as any).__PHASER_GAME__ = game;
 ```
 
+> **`import.meta.env` needs Vite's client types.** Add `"types": ["vite/client"]` to
+> `tsconfig.json` `compilerOptions`, or this line fails `npx tsc --noEmit` with
+> `TS2339: Property 'env' does not exist on type 'ImportMeta'` — which the TypeScript
+> gate will then reject.
+
+
 This is a one-line, dev-only change. Apply it, then re-run. See
 `references/instrumenting-games.md` for the fuller test surface (typed hooks, seeded
 RNG, state injection via query params) when scenarios need it.

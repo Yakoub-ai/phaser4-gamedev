@@ -84,6 +84,7 @@ A passing `tsc` proves the code compiles. It does not prove the game runs. Asset
   ```
   It boots the game headless, captures console/page errors and asset 404s, verifies scenes are active and the canvas is not blank, samples FPS, and writes screenshots to `.playtest/`.
 - **Expose the game instance in every project you scaffold** — `if (import.meta.env.DEV) (window as any).__PHASER_GAME__ = game;` next to `new Phaser.Game(config)`. One dev-only line; it unlocks every state assertion the harness and the browser console can make.
+- **Add `"types": ["vite/client"]` to `tsconfig.json`** whenever you use `import.meta.env`. Without it that line fails `tsc --noEmit` with `TS2339: Property 'env' does not exist on type 'ImportMeta'`, and the instrumentation you just added blocks the TypeScript gate.
 - **"It compiles" is not a completion report.** If you have not run the game, say that you have not run it rather than implying it works.
 - For scripted verification of a mechanic (drive input, assert on live state), see the phaser-playtest skill and hand off to the phaser-playtester agent.
 
