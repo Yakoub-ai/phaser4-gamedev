@@ -1,7 +1,7 @@
 ---
 name: phaser-feedback
 description: This skill should be used when the user pastes raw player feedback, playtester notes, bug reports, Discord or Reddit comments, itch.io comments, App Store reviews, QA notes, or a list of complaints about their Phaser game, or asks to "triage this feedback", "fix what players reported", "reproduce this bug report", "act on playtest notes", "turn feedback into tests", "what should I fix first", or "respond to this reviewer". Use it whenever feedback about a running game needs to become reproducible tests, prioritised fixes, and a verified re-release.
-version: 0.6.0
+version: 0.7.0
 ---
 
 # Turning Player Feedback Into Shipped Fixes

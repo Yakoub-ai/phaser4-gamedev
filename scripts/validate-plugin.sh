@@ -305,10 +305,47 @@ info "Phaser 4 API accuracy checks..."
 check_mentions() {
   if grep -rqi -- "$1" "$PLUGIN_DIR/agents/" "$PLUGIN_DIR/skills/" 2>/dev/null; then ok "$2"; else warn "$2 — NOT FOUND"; fi
 }
-check_mentions "phaser" "Correct Phaser 4 install command (phaser) is referenced"
 check_mentions "Math\.TAU" "Math.TAU (v4 replacement for Math.PI2) is referenced"
 check_mentions "Vector2" "Vector2 (v4 replacement for Geom.Point) is referenced"
 check_mentions "Beam" "Phaser Beam renderer is mentioned"
+check_mentions "enableFilters" "enableFilters() (required before GameObject filters) is referenced"
+check_mentions "filters\.internal" "The Filters system (v4 replacement for FX and masks) is referenced"
+
+# Regression guards. Each of these was wrong in a shipped version of this plugin and
+# would silently mislead every project that followed it.
+#
+# These APIs are legitimately *named* in migration docs ("createBitmapMask() was
+# removed"), so a bare grep would flag the correct content too. Flag only lines that
+# mention one without any marker saying it is gone — i.e. an actual recommendation.
+# A mention is *not* a recommendation when the line either negates it (case-insensitive)
+# or is structurally an audit/conversion artifact:
+#   - a `grep -rn '...'` line is a migration audit command, listing what to search FOR
+#   - a markdown table row `| old API | new API |` is a conversion table
+NEGATION='removed|no longer|not exist|does not|do not|don.t|never|instead|replaced|was |were |v3|phaser 3|gone|deprecated|not a method|not methods|\bno\b|not\b|avoid|stale|older than|neither|nor '
+guard_not_recommended() {
+  local needle="$1" label="$2" hits
+  hits=$(grep -rInI -- "$needle" \
+           "$PLUGIN_DIR/agents/" "$PLUGIN_DIR/skills/" "$PLUGIN_DIR/commands/" \
+           "$PLUGIN_DIR/hooks/" "$PLUGIN_DIR/README.md" "$PLUGIN_DIR/CLAUDE.md" 2>/dev/null \
+         | grep -viE "$NEGATION" \
+         | grep -vE 'grep -[a-zA-Z]*n' \
+         | grep -vE '^[^:]+:[0-9]+:\s*\|.*\|.*\|' || true)
+  if [[ -n "$hits" ]]; then
+    error "$label"
+    while IFS= read -r line; do echo "        ${line#"$PLUGIN_DIR"/}"; done <<< "$hits"
+  else
+    ok "$label"
+  fi
+}
+
+# `phaser@beta` resolves to 4.0.0-rc.7, older than `latest`. Recommending it is a downgrade.
+guard_not_recommended "npm install phaser@beta" "'npm install phaser@beta' is not recommended anywhere (that tag is older than stable)"
+# The v3 type recipe hard-fails on v4 with TS2688.
+guard_not_recommended 'types": \["Phaser"\]' "the v3 typeRoots/types:[\"Phaser\"] recipe is not recommended (it fails on v4 with TS2688)"
+# These do not exist in Phaser 4 at all.
+guard_not_recommended "setScissor" "camera.setScissor() is not recommended (no such method in v4)"
+guard_not_recommended "createBitmapMask\|createGeometryMask" "createBitmapMask/createGeometryMask are not recommended (removed in v4)"
+guard_not_recommended "tintFill" "tintFill is not recommended (use setTintMode in v4)"
 
 # Every `skills/<name>/<sub>/<file>` path cited in prose must resolve. These
 # cross-skill pointers are how a skill hands off to deeper reference material;

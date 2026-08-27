@@ -5,14 +5,14 @@
   },
   "metadata": {
     "description": "Phaser 4 game development toolkit for Claude Code \u2014 scaffolding, scenes, physics, migration, debugging, GDD generation, project analysis, headless playtesting, and 9 game archetypes",
-    "version": "0.6.0"
+    "version": "0.7.0"
   },
   "plugins": [
     {
       "name": "phaser4-gamedev",
       "source": "./",
       "description": "Comprehensive Phaser 4 game development toolkit \u2014 21 skills, 7 commands, 5 agents, 9 archetypes. Plan with GDDs and architecture, build scenes/physics/UI, then verify the game actually runs with the headless playtest harness.",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "category": "gamedev",
       "tags": [
         "phaser",

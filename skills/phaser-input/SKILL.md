@@ -1,7 +1,7 @@
 ---
 name: phaser-input
 description: This skill should be used when the user asks to "handle input", "keyboard controls", "mouse click", "touch controls", "gamepad support", "drag and drop", "virtual joystick", "WASD movement", "detect click", "pointer events", "keyboard shortcut", or "input manager".
-version: 0.6.0
+version: 0.7.0
 ---
 
 # Phaser 4 Input

@@ -1,7 +1,7 @@
 ---
 name: phaser-playtest
 description: This skill should be used when the user asks to "playtest my game", "test my Phaser game", "does my game actually run", "check the game in a browser", "verify the game works", "smoke test the game", "automate game testing", "catch black screens", "check for asset 404s", "measure FPS", "screenshot the game", "write a playtest scenario", or whenever Phaser 4 code has been written or changed and needs runtime verification before being handed back to the user.
-version: 0.6.0
+version: 0.7.0
 ---
 
 # Phaser 4 Playtesting (Runtime Verification)
@@ -160,3 +160,13 @@ plugin being installed.
 - When it fails, read `.playtest/report.json` and the screenshots before editing code.
   Investigation-first applies here exactly as in `phaser-debugger`.
 - Keep a scenario per major feature under `playtest/`; they are regression tests.
+
+---
+
+## When the failure came from a player
+
+If you are here because someone reported a bug rather than because you just changed code,
+use `skills/phaser-feedback/` instead of writing a scenario straight away. It covers
+triaging the report first (a "too hard" complaint is not a defect and has no repro), and
+maps each claim shape to the right construct — `--repeat` for "sometimes", `sample` for
+"gets stuck", `waitFor` for "takes too long", `--heap` for "slows down over time".

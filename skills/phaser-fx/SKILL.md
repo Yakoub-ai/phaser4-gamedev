@@ -1,7 +1,7 @@
 ---
 name: phaser-fx
 description: This skill should be used when the user asks to "add a glow", "blur the background", "add a screen effect", "mask a sprite", "add post-processing", "shader effect", "add lighting", "flashlight cone", "vision cone", "normal maps", "make the screen flash", "color grading", "tint a sprite", "screen shake with effects", "damage flash", "hit flash", "vignette", "bloom", "convert my preFX/postFX code", "BitmapMask replacement", "custom shader", "SpriteGPULayer", "Mesh2D", "stencil mask", or any Phaser 4 visual effect, filter, mask, light or renderer question.
-version: 0.6.0
+version: 0.7.0
 ---
 
 # Phaser 4 Filters, Masks, Lights and the Beam Renderer

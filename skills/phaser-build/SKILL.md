@@ -1,7 +1,7 @@
 ---
 name: phaser-build
 description: This skill should be used when the user asks to "build my game", "run my Phaser game", "start dev server", "deploy my game", "fix build errors", "configure Vite for Phaser", "game won't build", "TypeScript errors in Phaser", "publish to itch.io", or needs to compile, run, troubleshoot, or deploy a Phaser 4 project.
-version: 0.6.0
+version: 0.7.0
 ---
 
 # Phaser 4 Build and Deployment
@@ -182,6 +182,10 @@ export default defineConfig({
 **`base: './'` is critical** for itch.io, GitHub Pages, and any subdirectory deployment. Without it, assets load from `/` (root) which breaks on subdirectory hosts.
 
 ## Deployment Targets
+
+> This section covers the mechanics of getting a build onto a host. For deciding whether
+> the game is *ready* — the readiness gate, versioning, store presence, launch day — see
+> `skills/phaser-release/`.
 
 ### itch.io
 
