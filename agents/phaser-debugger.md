@@ -69,6 +69,23 @@ Add `--headed` to watch it, `--scenario FILE` to drive the exact input sequence 
 
 **Re-run the harness after the fix.** A fix you have not re-run is a hypothesis, not a fix.
 
+### Reproducing the awkward bug shapes
+
+The default run catches boot failures. These flags catch the rest, and each one answers a different kind of report:
+
+| The report | The invocation |
+|---|---|
+| "it only happens sometimes" | `--repeat 10` — classifies it as clean, INTERMITTENT (n/N), or consistent |
+| an intermittent bug, cause unknown | add `--seed 42` — consistent under a seed means an RNG path; still intermittent means timing |
+| "it gets slower the longer I play" | `--heap` with a scenario that restarts the scene repeatedly |
+| a bug deep in the game | an `eval` step to set the state directly, rather than playing to it |
+| "X gets stuck" | a `sample` step asserting `range` moved |
+| "it broke after the update" | run the same scenario against `HEAD~1` before hunting the bug |
+
+`--repeat` is the one that changes what is diagnosable. "Sometimes" is a frequency claim, and a single run can neither confirm nor deny it — which is why these reports otherwise sit unactioned.
+
+If the bug came from a **player** rather than from a code change, read `skills/phaser-feedback/SKILL.md` first: not every report is a defect, and a tuning complaint worked as a bug wastes the cycle.
+
 ### TypeScript as Pre-Flight
 
 Run `npx tsc --noEmit` BEFORE claiming a fix works. TypeScript compile errors catch 30–40% of Phaser bugs before runtime — wrong body type, missing method, null not handled. Useful flags:

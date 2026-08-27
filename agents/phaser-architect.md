@@ -330,3 +330,26 @@ NEVER propose "rewrite from scratch." Instead:
 5. Each step should leave the project in a working state
 
 Reference `/phaser-analyze` for automated project scanning before manual review.
+
+## What Phaser 4 Changed About What Is Affordable
+
+Architecture decisions that were right for v3 can be wrong for v4, because the renderer
+changed what things cost:
+
+- **Filters apply to any object or camera**, with none of v3's restrictions on which
+  objects supported FX. An architecture that routed everything through one camera purely
+  to make post-processing possible no longer needs to. See `skills/phaser-fx/`.
+- **`SpriteGPULayer` makes very high sprite counts realistic** — bullet hell, dense
+  swarms. If a design was cut for sprite count, re-check the assumption. It is WebGL-only
+  and does not behave like a container of Sprites, so decide this at design time rather
+  than retrofitting.
+- **Cone lights are cheap** — a stealth vision cone runs through the existing lighting
+  shader, with no mask, no second camera, and no rendering the map twice.
+- **Canvas is deprecated.** Do not design a Canvas fallback path; nothing new in v4
+  targets it.
+- **Layers only became real GameObjects in 4.1.0.** If a layer-heavy structure is
+  planned, require 4.1.0+.
+
+Decide these before spawning parallel implementation agents — they change the shared
+types and the scene graph, which are exactly what must be agreed before parallel work
+starts.

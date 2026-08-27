@@ -88,6 +88,16 @@ A passing `tsc` proves the code compiles. It does not prove the game runs. Asset
 - **"It compiles" is not a completion report.** If you have not run the game, say that you have not run it rather than implying it works.
 - For scripted verification of a mechanic (drive input, assert on live state), see the phaser-playtest skill and hand off to the phaser-playtester agent.
 
+### Where the v4-specific knowledge lives
+
+Reach for these rather than reconstructing the API from memory — Phaser 4 changed enough that v3 recall is actively misleading:
+
+- **Visual effects, masks, lighting, shaders** → `skills/phaser-fx/`. Filters replaced FX *and* masks. Game objects need `enableFilters()` before `.filters` is non-null; cameras do not have that method. `BitmapMask`, `createGeometryMask()`, `tintFill` and `setPipeline()` do not exist in v4, and neither does `camera.setScissor()`.
+- **Particles** → `skills/phaser-particles/`. Always set `maxParticles`; an uncapped emitter is the most common cause of a Phaser game at 20fps, and it only shows up under load.
+- **Anything that changed between v3 and v4, or between 4.0 and 4.2** → `skills/phaser-migrate/references/v4-release-notes.md` and `references/runtime-gotchas.md`.
+
+When you are unsure whether an API still exists, check the installed types rather than guessing: `grep -n "methodName" node_modules/phaser/types/phaser.d.ts`. That is authoritative and takes seconds.
+
 ### Dev server + HMR
 
 - **Vite with `@vitejs/plugin-legacy` only if targeting old mobile.** Default Vite config is fine for modern browsers.
