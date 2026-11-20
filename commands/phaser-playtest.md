@@ -30,7 +30,11 @@ Interpret $ARGUMENTS as the mode: `dev` (default), `build` (production bundle), 
    ```
    Append `--mode build` for `build`, or `--device iphone` for `mobile`.
 
-   If the project has scenarios in `playtest/`, run each one with `--scenario`.
+   If the project has scenarios in `playtest/`, add `--scenario playtest` — a directory
+   runs every scenario from a fresh page load, with one server and one browser. That is
+   the regression suite; run all of it, not just the scenario for the current change.
+   Projects created by `/phaser-new` have this wired up as `npm run playtest` and
+   `npm run playtest:build`.
 
    The harness manages the dev server itself — do not start `npm run dev` separately.
 

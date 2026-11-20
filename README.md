@@ -1,12 +1,12 @@
 # phaser4-gamedev
 
-A portable agent-skills package and Claude Code plugin that makes building [Phaser 4](https://phaser.io) web games fast and easy. It ships **26 portable skills**, **5 Claude Code subagents**, **10 Claude slash commands**, and **2 Claude hooks** that encode deep Phaser 4 (v4.2.1) knowledge — so you can build any 2D web game without needing to memorize the API.
+A portable agent-skills package and Claude Code plugin that makes building [Phaser 4](https://phaser.io) web games fast and easy. It ships **26 portable skills**, **5 Claude Code subagents**, **11 Claude slash commands**, and **2 Claude hooks** that encode deep Phaser 4 (v4.2.1) knowledge — so you can build any 2D web game without needing to memorize the API.
 
 It covers the whole loop, not just the coding part:
 
 ```
-/phaser-brainstorm ──► /phaser-gdd ──► /phaser-new ──► phaser-coder
-    shape & scope          plan          scaffold        implement
+/phaser-brainstorm ──► /phaser-gdd ──► /phaser-new ──► /phaser-dev
+    shape & scope          plan          scaffold       phase by phase
                              │                               │
                              │                               ▼
                              │                       /phaser-playtest ──► /phaser-release
@@ -18,7 +18,14 @@ It covers the whole loop, not just the coding part:
                              └── acceptance criteria ───────────► playtest scenarios
 ```
 
-Two steps most toolkits skip. The first is `/phaser-playtest`. `tsc --noEmit` proves your code
+Every project starts verified. `/phaser-new` scaffolds deterministically (no prompts, no
+remote templates) and runs `npm run verify` — typecheck, unit tests, and a playtest of the
+minified production build — before any game code is written. `/phaser-dev` then builds the
+game one phase of `docs/ARCHITECTURE.md` at a time: each phase's exit conditions become
+failing playtest scenarios first, then code until they pass, then permanent regression
+tests. That loop works for any game, not just the nine archetypes.
+
+Two more steps most toolkits skip. The first is `/phaser-playtest`. `tsc --noEmit` proves your code
 *compiles*; it says nothing about whether the game *runs*. A mistyped asset path, a
 scene left out of `scene: []`, a throw partway through `create()` — all type-check
 perfectly and all ship a black screen. The playtest harness boots the real game in
@@ -33,7 +40,9 @@ behind as a regression test, so feedback compounds instead of recurring.
 
 - **26 Portable Skills** — installable with `npx skills add` for Codex, Claude Code, Cursor, OpenCode, and other compatible coding agents
 - **5 Claude Code Agents** — specialized subagents for architecture, coding, debugging, asset management, and playtesting
-- **10 Claude Commands** — `/phaser-brainstorm`, `/phaser-gdd`, `/phaser-new`, `/phaser-run`, `/phaser-playtest`, `/phaser-validate`, `/phaser-build`, `/phaser-analyze`, `/phaser-release`, `/phaser-feedback`
+- **Verified scaffold** — Phaser 4.2.1 + Vite 8 + TypeScript 7 + Vitest, a build-time Content-Security-Policy, a vendored playtest harness, and GitHub Actions CI + Pages deploy with SHA-pinned actions
+- **Phase-by-phase development** — `/phaser-dev` turns each architecture phase's exit conditions into failing playtests, implements until green, and keeps them as regression tests
+- **11 Claude Commands** — `/phaser-brainstorm`, `/phaser-gdd`, `/phaser-new`, `/phaser-dev`, `/phaser-run`, `/phaser-playtest`, `/phaser-validate`, `/phaser-build`, `/phaser-analyze`, `/phaser-release`, `/phaser-feedback`
 - **Feedback → failing test → fix** — paste raw player feedback and get it triaged, reproduced as a playtest scenario, fixed, and verified, with the scenario kept as a regression test
 - **Flake detection** — `--repeat N` classifies a bug as clean, intermittent, or consistent, and `--seed` separates an RNG bug from a timing bug. "It only happens sometimes" becomes actionable
 - **Full Phaser 4 renderer coverage** — Filters (which replaced FX *and* masks), stencils, cone lights, `Mesh2D`, `SpriteGPULayer`, tint modes, alpha strategies
@@ -314,18 +323,18 @@ Guides asset loading, packing, and optimization.
 "create a Phaser 4 game" / "scaffold a Phaser project" / "set up a new game"
 ```
 
-Scaffolds a complete Phaser 4 project with TypeScript + Vite:
+Scaffolds a verified Phaser 4 + TypeScript + Vite project — deterministic, no prompts,
+refuses to overwrite files:
 
 ```bash
-npm create @phaserjs/game@latest   # official scaffolder (recommended)
-# or manual: creates package.json, tsconfig.json, vite.config.ts,
-#            index.html, src/main.ts, src/scenes/{Boot,Preloader,Game}Scene.ts
+node skills/phaser-init/scripts/scaffold.mjs my-game --physics arcade   # arcade | matter | none
+cd my-game && npm run verify    # typecheck + vitest + production-build playtest
 ```
 
-Includes `examples/` with ready-to-copy templates:
-- `game-config.ts` — complete GameConfig with all options annotated
-- `boot-scene.ts` — minimal BootScene starter
-- `vite-config.ts` — Vite config with `base: './'` for itch.io deployment
+You get Boot → Preloader → MainMenu → Game → GameOver scenes with placeholder art, a pure
+logic module with unit tests, a smoke playtest scenario, a build-only CSP, the playtest
+harness vendored into `tools/`, and CI + GitHub Pages workflows. The exact files live in
+`skills/phaser-init/template/`.
 
 ---
 
@@ -394,8 +403,10 @@ Covers:
 - Dev server (`npm run dev`), production build (`npm run build`)
 - TypeScript errors: `input.keyboard!`, body casting, scene casting
 - Common issues: 404 assets (must be in `public/`), a missing `phaser` dependency
-- Deployment to itch.io, GitHub Pages, Netlify/Vercel, Capacitor (iOS/Android)
-- Includes `scripts/validate-project.sh` — automated health check
+- Vite 8 (Rolldown/Oxc) config: relative `base`, Phaser in its own cached chunk, no source maps
+- Deployment to itch.io, GitHub Pages (official Pages actions, SHA-pinned), Netlify/Vercel, Capacitor
+- Production hardening: CSP, response headers, secrets in `VITE_*`, supply chain, client trust
+- Includes `scripts/validate-project.sh` — automated health check, including security checks
 
 ---
 
@@ -575,7 +586,8 @@ Generates a comprehensive 13-section Game Design Document: game overview, core l
 
 | Command | Description |
 |---|---|
-| `/phaser-new [template]` | Scaffold a new game — optionally from an archetype (`platformer`, `topdown`, `shooter`, `puzzle`, `towerdefense`, `runner`, `cardgame`, `fighting`, `racing`) |
+| `/phaser-new [template]` | Scaffold a verified game — `custom` (from `docs/GDD.md`), `blank`, or an archetype (`platformer`, `topdown`, `shooter`, `puzzle`, `towerdefense`, `runner`, `cardgame`, `fighting`, `racing`) |
+| `/phaser-dev [phase]` | Implement the next phase of `docs/ARCHITECTURE.md`: tests first, then code, then the full regression suite |
 | `/phaser-run` | Start the dev server and verify the game boots |
 | `/phaser-playtest [dev\|build\|mobile]` | Run the game headless and verify it actually works |
 | `/phaser-validate` | Run the project health check (structure, runtime, smoke tests, deploy checklist) |
@@ -605,7 +617,8 @@ Generates a comprehensive 13-section Game Design Document: game overview, core l
 | Latest version | v4.2.1 (Giedi) |
 | Effects | Filters replaced FX *and* masks. Game objects need `enableFilters()` first; cameras do not |
 | Masking | `BitmapMask` and `createGeometryMask()` are gone. Use a camera viewport or `filters.internal.addMask()`. There is no `camera.setScissor()` |
-| Scaffold | `npm create @phaserjs/game@latest` |
+| Scaffold | `/phaser-new` (deterministic, verified). The official `npm create @phaserjs/game@latest` is interactive — use it only for React/Vue/Svelte shells |
+| Toolchain | Vite 8 (Rolldown + Oxc), TypeScript 7, Vitest 5, Node ≥ 20.19 |
 | Renderer | "Phaser Beam" (new WebGL, up to 16x faster filters on mobile) |
 | TypeScript types | Resolved automatically via Phaser's `exports` map — use `moduleResolution: "bundler"` and `import Phaser from 'phaser'`. The v3 `typeRoots`/`types: ["Phaser"]` pair breaks v4 builds. |
 | Core API vs v3 | Mostly identical (scenes, physics, input, audio, cameras) |
@@ -651,6 +664,7 @@ phaser4-gamedev/
 │   └── phaser-playtester.md     (sonnet)
 ├── commands/
 │   ├── phaser-new.md
+│   ├── phaser-dev.md
 │   ├── phaser-run.md
 │   ├── phaser-playtest.md
 │   ├── phaser-validate.md
@@ -666,7 +680,7 @@ phaser4-gamedev/
 │       ├── check-v3-api.sh
 │       └── detect-phaser.sh
 ├── skills/
-│   ├── phaser-init/         scaffolding + 9 game archetypes
+│   ├── phaser-init/         verified scaffold (template/ + scripts/scaffold.mjs) + 9 archetypes
 │   ├── phaser-architect/    portable architecture planning skill
 │   ├── phaser-coder/        portable implementation skill
 │   ├── phaser-debugger/     portable debugging skill

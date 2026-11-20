@@ -1,7 +1,7 @@
 ---
 name: phaser-brainstorm
 description: This skill should be used when the user asks to "brainstorm a game idea", "help me come up with a game", "I want to make a game but don't know what", "is this game idea any good", "what should I build", "refine my game concept", "scope this idea down", "what genre fits", "help me pick a game to build", "turn this idea into something buildable", or arrives with a vague concept that needs shaping before a GDD can be written.
-version: 0.7.0
+version: 0.8.0
 ---
 
 # Brainstorming a Phaser 4 Game

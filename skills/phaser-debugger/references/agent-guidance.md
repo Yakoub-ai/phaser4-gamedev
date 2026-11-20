@@ -65,7 +65,7 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-playtest/scripts/playtest.mjs" --proje
 
 This gives you, in one run, what a user report usually leaves out: the uncaught exception with its stack, every console error, every asset that failed to load (including files the dev server masks as `200 text/html`), which scenes are actually running, how many display objects each holds, live FPS, and a screenshot of what really rendered. Read `.playtest/report.json` before you open a source file.
 
-Add `--headed` to watch it, `--scenario FILE` to drive the exact input sequence that triggers the bug, or `--device iphone` for mobile-specific reports. If the harness warns that the game instance is not on `window`, add `if (import.meta.env.DEV) (window as any).__PHASER_GAME__ = game;` — it unlocks scene and state inspection.
+Add `--headed` to watch it, `--scenario FILE` to drive the exact input sequence that triggers the bug, or `--device iphone` for mobile-specific reports. If the harness warns that the game instance is not on `window`, add `if (import.meta.env.DEV || import.meta.env.VITE_PLAYTEST === 'true') (window as any).__PHASER_GAME__ = game;` — it unlocks scene and state inspection.
 
 **Re-run the harness after the fix.** A fix you have not re-run is a hypothesis, not a fix.
 

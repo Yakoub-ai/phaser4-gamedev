@@ -1,176 +1,157 @@
 ---
 name: phaser-init
 description: This skill should be used when the user asks to "create a Phaser game", "initialize a Phaser 4 project", "scaffold a Phaser project", "set up a new game", "start a Phaser project", "bootstrap a game", "npm create phaser", or wants to start a Phaser 4 project from scratch.
-version: 0.7.0
+version: 0.8.0
 ---
 
 # Phaser 4 Project Initialization
 
-Scaffold a new Phaser 4 (v4.2.1) project with TypeScript and Vite.
+Create a Phaser 4 (v4.2.1) + TypeScript + Vite project that is verified to boot, play,
+and build before any game code is written.
 
-## Quick Scaffold (Recommended)
-
-Use the official scaffolder for the fastest setup:
-
-```bash
-npm create @phaserjs/game@latest
-```
-
-This interactive CLI supports React, Vue, Angular, Svelte, Next.js, SolidJS, and plain TypeScript.
-For beginners: choose **TypeScript + Vite** when prompted.
-
-After scaffolding, it installs `phaser` automatically. Run:
+## Scaffold
 
 ```bash
-cd my-game
-npm install
-npm run dev
+node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-init/scripts/scaffold.mjs" <dir> [options]
 ```
 
-## Manual Scaffold
+| Option | Default | Use |
+|---|---|---|
+| `--physics arcade\|matter\|none` | `arcade` | See the table below |
+| `--width N --height N` | `1280 720` | Design resolution; `Scale.FIT` handles the rest |
+| `--pixel-art` | off | Crisp nearest-neighbour scaling |
+| `--title TEXT` | from dir name | Menu and `<title>` text |
+| `--name NAME` | from dir name | npm package name |
+| `--no-ci` | CI on | Skip the GitHub Actions workflows |
+| `--no-install` | install on | Skip `npm install` |
 
-Use this when the user needs a custom setup or wants to understand each piece.
+It is deterministic and non-interactive: no prompts, no remote templates, nothing
+downloaded but the pinned npm dependencies. It refuses to overwrite an existing file, so
+it is safe to run in a directory that already holds `docs/GDD.md` or a `.git/`.
 
-### Step 1 — Create Project
+Then prove it works:
 
 ```bash
-mkdir my-game && cd my-game
-npm init -y
-npm install phaser
-npm install -D typescript vite @types/node
+cd <dir> && npm run verify     # tsc + vitest + production-build playtest
 ```
 
-### Step 2 — Directory Structure
+If Playwright reports a missing browser, run `npx playwright install chromium` once
+(or pass `--browser /path/to/chromium` to the harness when one is already installed).
 
-Create this layout:
+### What you get
 
 ```
-my-game/
-├── index.html
-├── package.json
-├── tsconfig.json
-├── vite.config.ts
-├── public/
-│   └── assets/
-│       ├── images/
-│       ├── spritesheets/
-│       ├── atlases/
-│       ├── audio/
-│       └── tilemaps/
-└── src/
-    ├── main.ts
-    └── scenes/
-        ├── BootScene.ts
-        ├── PreloaderScene.ts
-        └── GameScene.ts
+index.html                  no inline script; CSP injected at build time
+vite.config.ts              base './', CSP plugin, no source maps in production
+tsconfig.json               strict, moduleResolution bundler, types: [vite/client]
+src/main.ts                 GameConfig + the __PHASER_GAME__ test hook (dev/playtest only)
+src/scenes/                 Boot → Preloader → MainMenu → Game → GameOver (keys = class names)
+src/logic/score.ts          pure rules, no Phaser import — unit-testable
+tests/score.test.ts         Vitest
+playtest/smoke.mjs          menu → play → move → score → game over, as assertions
+tools/playtest.mjs          the playtest harness, vendored so CI needs no plugin
+public/assets/              everything Phaser loads at runtime
+.github/workflows/          ci.yml (verify every push/PR), deploy-pages.yml (on tag)
+.github/dependabot.yml      weekly npm, monthly actions updates
 ```
 
-### Step 3 — Configuration Files
+The starter loop (move with arrows / WASD / touch, collect, beat the clock) exists to
+prove input, rendering, scene flow and storage all work. Replace it — keep the shape.
 
-Generate these files exactly as shown in `examples/`:
+| Script | Does |
+|---|---|
+| `npm run dev` | Dev server with hot reload |
+| `npm run build` | `tsc --noEmit && vite build` → `dist/` |
+| `npm test` | Vitest unit tests |
+| `npm run playtest` | Every scenario in `playtest/` against the dev server |
+| `npm run playtest:build` | Same, against the minified production bundle |
+| `npm run verify` | typecheck + test + `playtest:build` — the gate CI runs |
 
-- **`examples/game-config.ts`** — Complete `main.ts` with GameConfig
-- **`examples/boot-scene.ts`** — BootScene starter template
-- **`examples/vite-config.ts`** — Vite configuration for Phaser 4
+## Choosing options for any game
 
-Key configuration points:
+Pick from the game's needs, not its genre label. When a GDD exists, decide from Sections 3
+(mechanics), 10 (technical requirements) and 11 (platform targets).
 
-**`package.json` scripts:**
-```json
-{
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
-  }
-}
-```
+**Physics**
 
-**`tsconfig.json` critical fields:**
-```json
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "skipLibCheck": true,
-    "noEmit": true,
-    "types": ["vite/client"]
-  },
-  "include": ["src"]
-}
-```
+| The game needs | Use |
+|---|---|
+| Grid, turn, card, puzzle, narrative, idle/clicker, rhythm, menus only | `none` — tweens and grid logic; no physics cost |
+| Platforming, top-down movement, bullets, overlaps, many fast bodies | `arcade` — AABB/circle, cheapest, the default |
+| Rotation-accurate collisions, stacking, joints, ragdolls, pinball, physics puzzles | `matter` — see the `phaser-matter` skill |
 
-Phaser 4 ships its own types through the `exports` map in its `package.json`, so
-`moduleResolution: "bundler"` (or `"node16"`/`"nodenext"`) resolves them from a plain
-`import Phaser from 'phaser'` with no extra configuration.
+Arcade and Matter can coexist (enable both in `physics`) when one mechanic genuinely
+needs rigid bodies; start with one.
 
-`types: ["vite/client"]` is separate and *is* needed: it types `import.meta.env`, which
-the mandatory `__PHASER_GAME__` instrumentation line uses. Without it `npx tsc --noEmit`
-fails with `TS2339: Property 'env' does not exist on type 'ImportMeta'`.
+**Resolution**
 
-> **Do not add `typeRoots: ["./node_modules/phaser/types"]` with `types: ["Phaser"]`.**
-> That was the Phaser 3 / early-v4-RC recipe. Against Phaser 4.2.1 it fails outright with
-> `TS2688: Cannot find type definition file for 'Phaser'`, because the shipped types are a
-> single `types/phaser.d.ts` file rather than a `Phaser/index.d.ts` type-root package.
-> If you inherited that config, delete both fields.
+| Style | Size |
+|---|---|
+| HD / vector / UI-heavy | `1280x720` (default) |
+| Pixel art | `640x360`, `480x270` or `320x180` with `--pixel-art` (integer-scales to 1080p) |
+| Mobile portrait | `720x1280` — also read the `phaser-mobile` skill |
+| Square / puzzle | `1080x1080` |
 
-### Step 4 — Verify Installation
+## After scaffolding
 
-```bash
-npm run dev
-```
+- **Known genre** → the phaser-coder agent builds the archetype from
+  `references/template-archetypes.md` on top of this scaffold (scene keys match).
+- **Anything else** → the GDD-driven path: phaser-architect writes
+  `docs/ARCHITECTURE.md` from `docs/GDD.md`, then `/phaser-dev` builds and verifies it
+  one phase at a time. This is the path for games no archetype describes.
+- Each feature gets a scenario in `playtest/`; it stays as a regression test.
+- Real assets go in `public/assets/` and load by relative path
+  (`this.load.image('player', 'assets/player.png')`). Reuse the placeholder's texture key
+  and nothing else changes. See `references/asset-sourcing-guide.md`.
 
-Expected: browser opens at `http://localhost:5173` showing a dark canvas (or whatever background color was set). If it shows a blank page, check the browser console for errors.
+## Other setups
 
-## What to Do After Scaffolding
+**React / Vue / Svelte / Angular / Next.js shell.** The official `npm create
+@phaserjs/game@latest` CLI generates these. It is interactive and fetches its templates
+from GitHub at run time, so the user runs it themselves rather than Claude. Afterwards,
+bring the project up to this plugin's gate: add the `__PHASER_GAME__` line next to
+`new Phaser.Game(...)`, add `"types": ["vite/client"]` to tsconfig, copy
+`skills/phaser-playtest/scripts/playtest.mjs` to `tools/`, and add a smoke scenario.
 
-1. Replace `GameScene.ts` with actual game logic (use phaser-coder agent)
-2. Add assets to `public/assets/`
-3. Design the full scene flow (use phaser-architect agent)
-4. Set `arcade: { debug: false }` when done debugging
+**Existing project.** Do not scaffold over it. Add the same four items above, then run
+`/phaser-validate`.
 
-## Common Setup Mistakes
+## Common setup mistakes
 
-- **Assets not loading:** In Vite, assets must be in `public/`. Do NOT import them via `import`. Reference as `'assets/image.png'` (relative to server root).
-- **TypeScript errors on `Phaser.*`:** Import Phaser explicitly (`import Phaser from 'phaser';`) and use `moduleResolution: "bundler"`. If tsconfig still carries `typeRoots`/`types: ["Phaser"]` from a v3-era template, remove them — they break the build on v4. See Step 3.
-- **`phaser` not found:** Run `npm install phaser`. Do not use the `beta` tag — `phaser@beta` still resolves to `4.0.0-rc.7`, which is older than the current stable release.
-- **Black screen:** Check browser console for 404 errors or JS errors.
-
-## Additional Resources
-
-### Example Files
-
-Working templates in `examples/`:
-- **`examples/game-config.ts`** — Complete main.ts with scene registration
-- **`examples/boot-scene.ts`** — BootScene with minimal asset loading
-- **`examples/vite-config.ts`** — Vite config for Phaser 4
-
-### Reference Files
-
-- **`references/project-templates.md`** — Complete file listings for TypeScript+Vite, JavaScript+Vite, and HTML-only setups
-- **`references/template-archetypes.md`** — Full archetype specs for platformer, top-down RPG, space shooter, and match-3 puzzle games
+- **Assets 404 / black screen:** runtime assets belong in `public/`, referenced by
+  relative path. Never `import` a file Phaser loads by URL.
+- **`TS2688: Cannot find type definition file for 'Phaser'`:** a v3-era tsconfig with
+  `typeRoots`/`types: ["Phaser"]`. Delete both; Phaser 4 ships types via its `exports` map.
+- **`TS2339: Property 'env' does not exist on type 'ImportMeta'`:** add
+  `"types": ["vite/client"]`.
+- **Installed an old version:** never `phaser@beta` — that tag still points at
+  `4.0.0-rc.7`. Use `npm install phaser@latest`.
+- **`terser not found` on build:** Vite 8 minifies with Oxc by default; remove
+  `minify: 'terser'` rather than installing terser.
+- **State carries over after restarting a scene:** scene instances are reused. Reset
+  fields in `create()` (or `init()`), not in field initialisers.
 
 ## Template Archetypes
 
-When the user wants a specific type of game rather than a blank scaffold, generate a complete working game from an archetype. The phaser-coder agent uses the archetype specs to produce all files.
+Complete game specs layered onto the scaffold by the phaser-coder agent:
 
-Available archetypes (use with `/phaser-new [template]` or trigger the phaser-coder agent):
+| Archetype | Core features | Physics |
+|---|---|---|
+| `platformer` | Gravity, jump, platforms, enemies, coins, lives | arcade |
+| `topdown` | 8-dir movement, tilemap world, NPC dialog | arcade |
+| `shooter` | Scrolling BG, bullet pooling, enemy waves, power-ups | arcade |
+| `puzzle` | Match-3 grid, swapping, cascades, score | none |
+| `towerdefense` | Grid placement, waves, economy, projectile pooling | arcade |
+| `runner` | Auto-scroll, jump/slide, procedural obstacles, parallax | arcade |
+| `cardgame` | Memory match, flip animations, move scoring | none |
+| `fighting` | State-machine fighters, 2-player local, hitboxes, rounds | arcade |
+| `racing` | Rotation steering, checkpoints, AI opponents | arcade |
 
-| Archetype | Command | Core Features |
-|-----------|---------|--------------|
-| `platformer` | `/phaser-new platformer` | Gravity, jump, platforms, enemies, coins, lives system |
-| `topdown` | `/phaser-new topdown` | Zero gravity, 8-dir movement, tilemap world, NPC dialog |
-| `shooter` | `/phaser-new shooter` | Scrolling BG, bullet pooling, enemy waves, power-ups |
-| `puzzle` | `/phaser-new puzzle` | Match-3 grid, tile swapping, cascade matching, score |
-| `towerdefense` | `/phaser-new towerdefense` | Grid-based tower placement, enemy waves, economy, projectile pooling |
-| `runner` | `/phaser-new runner` | Auto-scrolling, jump/slide, procedural obstacles, parallax, increasing speed |
-| `cardgame` | `/phaser-new cardgame` | Memory match cards, flip animations, pair matching, move scoring |
-| `fighting` | `/phaser-new fighting` | State machine fighters, 2-player local, hitbox system, round-based |
-| `racing` | `/phaser-new racing` | Top-down rotation steering, tilemap track, checkpoints, AI opponents |
+**Specs:** `references/template-archetypes.md`
 
-All archetypes generate with placeholder assets (solid-color rectangles/circles via `Graphics.generateTexture()`) so the game runs immediately without real art. Replace with real assets when ready.
+## Additional Resources
 
-**Archetype specifications:** `references/template-archetypes.md`
+- **`scripts/scaffold.mjs`** — the scaffolder (`--help` for options)
+- **`template/`** — the exact files it writes; read these instead of guessing a config
+- **`references/template-archetypes.md`** — archetype specs
+- **`references/asset-sourcing-guide.md`** — free asset sources and licensing

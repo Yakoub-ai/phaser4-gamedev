@@ -27,22 +27,35 @@ Substitute `PT` for
 - [ ] `npx tsc --noEmit` — clean
 - [ ] `npm run build` — succeeds with no warnings you have not read
 - [ ] `PT --project . --mode build` — passes
-- [ ] Every `playtest/*.mjs` scenario passes **in build mode**
+- [ ] `PT --project . --mode build --scenario playtest` — every scenario, **in build mode**
 - [ ] `PT --project . --mode build --device iphone` — if claiming mobile
 - [ ] `PT --project . --mode build --device android` — if claiming mobile
 - [ ] `PT --project . --scenario playtest/long-session.mjs --heap` — no runaway growth
 
 ### Build output
 
-- [ ] `base` in `vite.config.ts` matches the deploy target (`'./'` for itch.io; the repo
-      path for GitHub Pages). Wrong `base` 404s every asset and is the most common
-      launch-day failure.
+- [ ] `base: './'` in `vite.config.ts` — relative works on itch.io, GitHub Pages and
+      Netlify alike. An absolute `base` 404s every asset on sub-path hosts and is the most
+      common launch-day failure.
 - [ ] Bundle size checked. Over ~10MB, web players on mobile data leave before it loads.
 - [ ] No source maps in production unless you intend them
 - [ ] `console.log` removed or gated behind `import.meta.env.DEV`
 - [ ] Physics debug rendering off — `debug: false`
 - [ ] Dev-only globals and cheat keys gated behind `import.meta.env.DEV`
 - [ ] No `.playtest/`, `node_modules/` or source in the deployed artifact
+- [ ] Artifact built by a plain `npm run build` *after* the last playtest (the playtest
+      build keeps the `__PHASER_GAME__` hook)
+
+### Security
+
+- [ ] `validate-project.sh` reports no secret-looking `VITE_*` variables — every `VITE_`
+      value is public
+- [ ] Content-Security-Policy present, and `PT --mode build` shows no CSP violations
+- [ ] `npm audit --omit=dev --audit-level=high` — clean, or each finding read and accepted
+- [ ] Every external origin the game contacts is listed in the CSP, and no wider
+- [ ] Leaderboards / rewards / multiplayer validated server-side, never trusted from the client
+- [ ] CI actions pinned to commit SHAs; deploy job has the minimum permissions
+- [ ] Analytics/ads: consent and privacy policy in place before launch
 
 ### Content and correctness
 

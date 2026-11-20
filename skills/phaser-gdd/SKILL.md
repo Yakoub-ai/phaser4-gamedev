@@ -1,7 +1,7 @@
 ---
 name: phaser-gdd
 description: This skill should be used when the user asks to "write a game design document", "create a GDD", "design my game", "document game mechanics", "plan game progression", "define core loop", "art direction", "audio design plan", "monetization strategy", "game concept document", "plan my game before coding", or wants to produce a structured design document for a Phaser 4 game before writing any code.
-version: 0.7.0
+version: 0.8.0
 ---
 
 # Phaser 4 Game Design Document Generator
@@ -308,10 +308,10 @@ design gets verified rather than merely stated.
 
 Once the GDD is finalized, guide the user to the next steps:
 
-1. **Scaffold the project** — Use `/phaser-new` to generate the base project structure matching the GDD's technical requirements.
-2. **Design the architecture** — Use the **phaser-architect** skill/agent to translate the GDD into a technical architecture: scene graph, class hierarchy, data flow, and system decomposition.
-3. **Start implementing** — Use the **phaser-coder** skill/agent to begin coding scenes, mechanics, and entities as specified in the GDD.
-4. **Verify it runs** — `/phaser-playtest` after each vertical slice. Section 13's automatable acceptance criteria become playtest assertions, which is how the design gets checked rather than merely stated.
+1. **Scaffold the project** — `/phaser-new custom` reads this GDD to choose physics, resolution and pixel-art settings, and verifies the scaffold boots, plays and builds.
+2. **Design the architecture** — the **phaser-architect** agent turns the GDD into `docs/ARCHITECTURE.md`: scene graph, state plan, and numbered phases, each with observable exit conditions drawn from Section 13.
+3. **Build phase by phase** — `/phaser-dev` implements one phase at a time: exit conditions become failing playtest scenarios first, then code until they pass, then they stay as regression tests.
+4. **Verify the whole** — `/phaser-playtest` at any time; Section 13's automatable criteria are now assertions, which is how the design gets checked rather than merely stated.
 5. **Ship it** — `/phaser-release` runs the readiness gate and prepares the store presence.
 6. **Iterate on what players say** — `/phaser-feedback` turns their reports into failing playtest scenarios, then fixes, then regression tests.
 

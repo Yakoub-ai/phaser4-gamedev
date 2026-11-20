@@ -16,11 +16,15 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/phaser-release/SKILL.md` and follow it.
 
    ```bash
    npx tsc --noEmit
-   node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-playtest/scripts/playtest.mjs" --project . --mode build
+   node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-playtest/scripts/playtest.mjs" --project . --mode build --scenario playtest
+   bash "${CLAUDE_PLUGIN_ROOT}/skills/phaser-build/scripts/validate-project.sh" .
+   npm audit --omit=dev --audit-level=high
    ```
 
-   Then every scenario in `playtest/`, in build mode. Add `--device iphone` if the game
-   claims mobile support, and `--heap` with a long-session scenario.
+   (`npm run verify` covers the first two in projects created by `/phaser-new`.) Add
+   `--device iphone` if the game claims mobile support, and `--heap` with a long-session
+   scenario. The validator's production-hardening section must be clean: a secret-looking
+   `VITE_*` variable or a missing CSP blocks the release.
 
    **`--mode build` is not optional here.** Dev mode hides the failures only players hit:
    a wrong `base` that 404s every asset, assets that never reached `dist/`, minification
@@ -52,9 +56,12 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/phaser-release/SKILL.md` and follow it.
    `references/store-presence.md`. The capture matters more than any of the text — people
    watch before they read.
 
-5. **Launch sequence** (`ship`). Confirm the feedback path is live and being watched
+5. **Launch sequence** (`ship`). Package from a fresh plain `npm run build` — the
+   playtest build keeps the test hook. Confirm the feedback path is live and being watched
    *before* announcing, verify against the deployed URL with `--url`, and confirm a
-   rollback build is kept and the rollback steps are written down.
+   rollback build is kept and the rollback steps are written down. For GitHub Pages,
+   projects from `/phaser-new` deploy by pushing a version tag (`git tag v1.0.0 && git
+   push --tags`); the workflow re-runs the full gate first.
 
 6. **Point at the loop.** After release, feedback goes through `/phaser-feedback`, and
    each reproduced bug leaves a `playtest/repro-*.mjs` behind that joins the gate for the

@@ -10,8 +10,9 @@ Run a comprehensive validation check on the current Phaser 4 project.
 
 2. **Run the validation script:**
    ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/skills/phaser-build/scripts/validate-project.sh"
+   bash "${CLAUDE_PLUGIN_ROOT}/skills/phaser-build/scripts/validate-project.sh" .
    ```
+   Exit code 0 = no errors (warnings allowed), 1 = errors.
 
 3. **Report results** — Present the output in a clear summary:
    - List all ERRORs (must fix — will break the build or runtime)
@@ -30,6 +31,9 @@ Run a comprehensive validation check on the current Phaser 4 project.
 - At least one scene file exists
 - No deprecated Phaser v3 APIs in source files
 - Vite config has `base: './'` for subdirectory deployment
+- Production hardening: no `minify: 'terser'` without terser, no Vite-8-incompatible
+  `manualChunks` object, no shipped source maps, a Content-Security-Policy, no
+  secret-looking `VITE_*` variables, `.env` git-ignored, the `__PHASER_GAME__` hook present
 - `public/` directory exists for assets
 
 ## After Validation
@@ -52,12 +56,12 @@ it by actually running it:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-playtest/scripts/playtest.mjs" --project .
-node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-playtest/scripts/playtest.mjs" --project . --mode build
+node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-playtest/scripts/playtest.mjs" --project . --mode build --scenario playtest
 ```
 
-The first run tests the dev build; the second tests the production bundle, where
-base-path, asset-copying, and tree-shaking bugs appear. Run any scenarios in
-`playtest/` as well.
+The first run tests the dev build; the second runs every scenario in `playtest/`
+against the production bundle, where base-path, asset-copying, tree-shaking and CSP
+bugs appear. Drop `--scenario playtest` if the project has no scenarios yet.
 
 If Playwright is missing, offer to install it
 (`npm install -D playwright && npx playwright install chromium`). If the user declines,
@@ -77,7 +81,7 @@ Verified automatically (tick these from the playtest results):
 - [ ] Game boots and reaches its first playable scene
 - [ ] Canvas renders content (not a black screen)
 - [ ] All assets load — no 404s, no `text/html` masking a missing file
-- [ ] No uncaught exceptions or console errors
+- [ ] No uncaught exceptions or console errors (in build mode this includes CSP violations)
 - [ ] Frame rate holds (headless is a regression signal, not a device measurement)
 - [ ] `npx tsc --noEmit` passes with zero errors
 - [ ] `npm run build` succeeds and the built game runs from `dist/`
@@ -87,6 +91,8 @@ Verified by inspection (grep the source):
 - [ ] `console.log` removed or gated behind `import.meta.env.DEV`
 - [ ] `vite.config.ts` has the correct `base` for the deployment target
 - [ ] Bundle size under budget
+- [ ] No secret-looking `VITE_*` variables; `.env` git-ignored; no source maps shipped
+- [ ] `npm audit --omit=dev --audit-level=high` clean
 
 Genuinely manual — state that these remain unverified:
 - [ ] Tested in Firefox and Safari (the harness runs Chromium only)

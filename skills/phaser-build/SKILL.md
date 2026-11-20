@@ -1,7 +1,7 @@
 ---
 name: phaser-build
 description: This skill should be used when the user asks to "build my game", "run my Phaser game", "start dev server", "deploy my game", "fix build errors", "configure Vite for Phaser", "game won't build", "TypeScript errors in Phaser", "publish to itch.io", or needs to compile, run, troubleshoot, or deploy a Phaser 4 project.
-version: 0.7.0
+version: 0.8.0
 ---
 
 # Phaser 4 Build and Deployment
@@ -14,13 +14,14 @@ Start the dev server with hot reload:
 npm run dev
 ```
 
-Opens at `http://localhost:5173` (Vite default). Changes auto-reload in the browser.
+Serves at `http://localhost:5173` by default — Vite picks the next free port if that is taken, so read the URL it prints. Changes auto-reload in the browser.
 
 ## Production Build
 
 ```bash
-npm run build     # Compiles TypeScript + bundles with Vite → dist/
-npm run preview   # Serve the dist/ folder locally to test production build
+npm run build            # tsc --noEmit + vite build → dist/
+npm run preview          # serve dist/ locally
+npm run playtest:build   # build + run every scenario against the minified bundle
 ```
 
 Output in `dist/` — static files ready for any web host.
@@ -30,7 +31,7 @@ Output in `dist/` — static files ready for any web host.
 Run the validation script before building:
 
 ```bash
-bash scripts/validate-project.sh
+bash "${CLAUDE_PLUGIN_ROOT}/skills/phaser-build/scripts/validate-project.sh" .
 ```
 
 The script checks for common issues automatically.
@@ -155,70 +156,68 @@ this.game.renderer.on('contextlost', () => {
 
 ## Vite Configuration
 
-```typescript
-// vite.config.ts
-import { defineConfig } from 'vite';
+Projects from `/phaser-new` already have the production config; the canonical copy is
+`skills/phaser-init/template/vite.config.ts`. What matters in it, for Vite 8:
 
+```typescript
+// vite.config.ts (excerpt)
 export default defineConfig({
-  base: './',             // IMPORTANT for itch.io and subdirectory deployment
+  base: './',                  // relative: works on itch.io, GitHub Pages sub-paths, Netlify, Capacitor
+  plugins: [contentSecurityPolicy()],   // CSP <meta> injected at build only
   build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-    minify: 'terser',
-    rollupOptions: {
+    target: 'es2022',
+    sourcemap: false,          // don't publish your source
+    chunkSizeWarningLimit: 2000,
+    rolldownOptions: {
       output: {
-        manualChunks: {
-          phaser: ['phaser'],  // Bundle Phaser separately for caching
-        },
+        // Phaser in its own long-cached chunk; patches only re-download your code.
+        codeSplitting: { groups: [{ name: 'phaser', test: /node_modules[\\/]phaser/ }] },
       },
     },
-  },
-  server: {
-    port: 5173,
   },
 });
 ```
 
-**`base: './'` is critical** for itch.io, GitHub Pages, and any subdirectory deployment. Without it, assets load from `/` (root) which breaks on subdirectory hosts.
+Vite 8 bundles with Rolldown and minifies with Oxc. Two consequences for older configs:
+
+- **`minify: 'terser'`** fails the build (`terser not found`) unless terser is
+  installed. Delete the line; the default is faster and comparable in size.
+- **`build.rollupOptions.output.manualChunks: { phaser: ['phaser'] }`** no longer works —
+  Rolldown dropped the object form. Use `rolldownOptions.output.codeSplitting.groups` as above.
+
+**`base: './'` is critical.** With the default `/`, assets resolve from the domain root
+and 404 on any sub-path host (itch.io, `user.github.io/repo/`). Relative works everywhere
+a single-page game is served, so there is no need for a per-host `base`.
 
 ## Deployment Targets
 
 > This section covers the mechanics of getting a build onto a host. For deciding whether
 > the game is *ready* — the readiness gate, versioning, store presence, launch day — see
-> `skills/phaser-release/`.
+> `skills/phaser-release/`. For CSP, headers, secrets and supply chain, see
+> `references/production-hardening.md`.
+
+**Whatever the host: ship a clean build.** `--mode build` playtests build with
+`VITE_PLAYTEST=true`, which keeps the test hook in `dist/`. Run a plain `npm run build`
+immediately before packaging or uploading.
 
 ### itch.io
 
-1. `npm run build`
-2. Zip the `dist/` folder contents (not the folder itself — zip what's inside)
-3. Upload the zip to itch.io → "Upload files" → HTML game
-4. Set "This file will be played in the browser"
-5. Check "SharedArrayBuffer support" if needed
+1. `npm run verify`, then `npm run build`
+2. Zip the *contents* of `dist/` (`cd dist && zip -r ../game.zip .`) — not the folder
+3. Upload → Kind of project: HTML → "This file will be played in the browser"
+4. Set the viewport to the game's design size (or enable fullscreen)
 
 ### GitHub Pages
 
-```yaml
-# .github/workflows/deploy.yml
-name: Deploy to GitHub Pages
-on:
-  push:
-    branches: [main]
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with: { node-version: '18' }
-      - run: npm ci
-      - run: npm run build
-      - uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-```
+Projects from `/phaser-new` include `.github/workflows/deploy-pages.yml`: on a `v*` tag
+or a manual run it runs `npm run verify`, rebuilds clean, and deploys with the official
+`actions/upload-pages-artifact` + `actions/deploy-pages`. Every action is pinned to a
+full commit SHA, and only the deploy job gets `pages: write` / `id-token: write`. One-time
+setup: repo **Settings → Pages → Source: GitHub Actions**. For an older project, copy
+the workflow from `skills/phaser-init/template/.github/workflows/`.
 
-Set `base: '/repo-name/'` in vite.config.ts for GitHub Pages (subdirectory).
+Avoid third-party deploy actions that push to a `gh-pages` branch with a write token: the
+official flow needs no branch, no `contents: write`, and no extra trust.
 
 ### Netlify / Vercel
 
@@ -226,7 +225,8 @@ Connect the git repo. Set:
 - Build command: `npm run build`
 - Output directory: `dist`
 
-Both auto-deploy on push to main.
+Both auto-deploy on push to main. Add security headers with a `public/_headers` file
+(Netlify, Cloudflare Pages) or `vercel.json` — see `references/production-hardening.md`.
 
 ### Capacitor (iOS/Android)
 
@@ -248,7 +248,7 @@ npx cap open android  # Opens Android Studio
 - [ ] Audio compressed (128kbps MP3 for BGM, 96kbps for SFX)
 - [ ] Object pooling for bullets/particles/enemies
 - [ ] `maxParticles` set on all particle emitters
-- [ ] `npx tsc --noEmit` passes with 0 errors
+- [ ] `npm run verify` passes (typecheck, unit tests, every scenario on the production build)
 - [ ] Tested in Chrome, Firefox, and Safari
 - [ ] Mobile tested (if targeting mobile)
 
@@ -258,7 +258,14 @@ npx cap open android  # Opens Android Studio
 
 Run the project validator:
 ```bash
-bash scripts/validate-project.sh
+bash "${CLAUDE_PLUGIN_ROOT}/skills/phaser-build/scripts/validate-project.sh" .
 ```
 
-The validator checks: Phaser version, tsconfig fields, presence of scene files, deprecated v3 API usage.
+The validator checks: Phaser version, tsconfig fields, scene registration, removed v3
+APIs, Vite 8 config pitfalls, CSP, secret-looking `VITE_*` variables, listener leaks and
+asset-key consistency. Exit 0 = no errors, 1 = errors.
+
+## References
+
+- `references/production-hardening.md` — CSP, response headers, secrets, supply chain, client trust
+- `references/testing-patterns.md` — Vitest for pure logic, playtest scenarios for runtime

@@ -83,7 +83,7 @@ A passing `tsc` proves the code compiles. It does not prove the game runs. Asset
   node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-playtest/scripts/playtest.mjs" --project .
   ```
   It boots the game headless, captures console/page errors and asset 404s, verifies scenes are active and the canvas is not blank, samples FPS, and writes screenshots to `.playtest/`.
-- **Expose the game instance in every project you scaffold** — `if (import.meta.env.DEV) (window as any).__PHASER_GAME__ = game;` next to `new Phaser.Game(config)`. One dev-only line; it unlocks every state assertion the harness and the browser console can make.
+- **Expose the game instance in every project you scaffold** — `if (import.meta.env.DEV || import.meta.env.VITE_PLAYTEST === 'true') (window as any).__PHASER_GAME__ = game;` next to `new Phaser.Game(config)`. One dev-only line; it unlocks every state assertion the harness and the browser console can make.
 - **Add `"types": ["vite/client"]` to `tsconfig.json`** whenever you use `import.meta.env`. Without it that line fails `tsc --noEmit` with `TS2339: Property 'env' does not exist on type 'ImportMeta'`, and the instrumentation you just added blocks the TypeScript gate.
 - **"It compiles" is not a completion report.** If you have not run the game, say that you have not run it rather than implying it works.
 - For scripted verification of a mechanic (drive input, assert on live state), see the phaser-playtest skill and hand off to the phaser-playtester agent.
@@ -537,13 +537,14 @@ After writing code:
 
 When generating a complete game from an archetype (triggered by `/phaser-new` command or user request like "create a platformer"):
 
-1. **Read the archetype spec** in `skills/phaser-init/references/template-archetypes.md` for the requested archetype.
-2. **Generate ALL files** — create every scene, object class, and main.ts listed in the archetype's file structure.
+1. **Start from the verified scaffold.** If the project does not exist yet, create it with `node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-init/scripts/scaffold.mjs" <dir> --physics <archetype's physics>` and run `npm run verify` before writing game code. Keep its `main.ts` test hook, CSP plugin, `tools/playtest.mjs` and `playtest/` layout; replace the starter `GameScene`.
+2. **Read the archetype spec** in `skills/phaser-init/references/template-archetypes.md` and generate every scene, object class and config change listed in its file structure. Update `playtest/smoke.mjs` to the new scene flow and add `playtest/<archetype>.mjs` asserting the core loop (e.g. platformer: holding → moves the player, Space leaves the ground, touching a coin raises the score).
 3. **Use placeholder assets** — generate all textures with `Graphics.generateTexture()` in PreloaderScene's `create()` method (before scene transition). This ensures the game works immediately without real art files.
 4. **Include replacement comments** — add `// REPLACE: load real spritesheet from 'assets/spritesheets/player.png'` comments where real assets should go.
 5. **Wire up all scenes** — register every scene in main.ts `scene: []` array.
-6. **Test the logic** — mentally trace through one game loop cycle to verify the collision matrix, input handling, and state management are consistent.
+6. **Prove it** — run `npm run verify` (typecheck, unit tests, every scenario against the production build). Mentally tracing a loop is not verification.
 7. **End with instructions** — after generating, tell the user:
    - How to start the game: `npm run dev`
+   - The `verify` result with pass counts
    - What's placeholder vs what needs real assets
    - What to customize first (player speed, level design, etc.)

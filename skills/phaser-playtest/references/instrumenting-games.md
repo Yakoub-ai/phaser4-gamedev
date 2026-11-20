@@ -14,7 +14,9 @@ Bundlers keep `game` in module scope, so nothing outside can reach it.
 // src/main.ts
 const game = new Phaser.Game(config);
 
-if (import.meta.env.DEV) {
+// VITE_PLAYTEST is set only by the harness's `--mode build`, so scenarios can run
+// against the real minified bundle. Neither flag is set in the build you ship.
+if (import.meta.env.DEV || import.meta.env.VITE_PLAYTEST === 'true') {
   (window as any).__PHASER_GAME__ = game;
 }
 
@@ -26,15 +28,18 @@ export default game;
 > `TS2339: Property 'env' does not exist on type 'ImportMeta'` — which the TypeScript
 > gate will then reject.
 
-`import.meta.env.DEV` is `false` in `npm run build`, so the global is stripped from
-production bundles by dead-code elimination.
+In a plain `npm run build` both conditions are `false`, so the global is stripped from
+the shipped bundle by dead-code elimination.
 
 This single line unlocks scene inspection, FPS sampling, state assertions, and every
 `expect` expression in a scenario.
 
-> **Testing the production build:** `--mode build` intentionally has no global. That
-> is correct — it verifies what ships. Use `--mode build` for boot/asset/render checks
-> and `--mode dev` for state assertions.
+> **Testing the production build:** `--mode build` runs `npm run build` with
+> `VITE_PLAYTEST=true`, so the same scenarios run against the minified bundle. That
+> `dist/` is therefore a test build — rebuild with a plain `npm run build` before
+> shipping it (the scaffolded CI deploy job does this). Projects still gated on
+> `import.meta.env.DEV` alone lose the global in build mode and the deep checks
+> downgrade to a warning; widen the gate to fix that.
 
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: phaser-release
 description: This skill should be used when the user asks to "release my game", "ship it", "publish to itch.io", "prepare for launch", "is my game ready to release", "make a store page", "release checklist", "version my game", "what do I need before launching", "post-launch", "my game is live and I need to update it", or is preparing a Phaser game for players rather than for testing.
-version: 0.7.0
+version: 0.8.0
 ---
 
 # Releasing a Phaser 4 Game
@@ -27,11 +27,10 @@ npx tsc --noEmit
 node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-playtest/scripts/playtest.mjs" \
   --project . --mode build
 
-# 3. Every scenario still passes
-for f in playtest/*.mjs; do
-  node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-playtest/scripts/playtest.mjs" \
-    --project . --scenario "$f" --mode build || echo "FAILED: $f"
-done
+# 3. Every scenario still passes — against the minified bundle
+node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-playtest/scripts/playtest.mjs" \
+  --project . --mode build --scenario playtest
+# (steps 1–3 are `npm run verify` in projects created by /phaser-new)
 
 # 4. Holds up on mobile if you claim mobile support
 node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-playtest/scripts/playtest.mjs" \
@@ -40,6 +39,13 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-playtest/scripts/playtest.mjs" \
 # 5. No leak across a long session
 node "${CLAUDE_PLUGIN_ROOT}/skills/phaser-playtest/scripts/playtest.mjs" \
   --project . --scenario playtest/long-session.mjs --heap
+
+# 6. Nothing secret, nothing vulnerable, CSP in place
+bash "${CLAUDE_PLUGIN_ROOT}/skills/phaser-build/scripts/validate-project.sh" .
+npm audit --omit=dev --audit-level=high
+
+# 7. Package a clean build — the playtest build carries a test hook
+npm run build
 ```
 
 **`--mode build` is the one that matters.** Dev mode hides exactly the failures that only
@@ -47,7 +53,13 @@ players see: a wrong `base` path in `vite.config.ts` that 404s every asset on it
 assets referenced from `src/` that never reached `dist/`, minification breaking code that
 depends on `.name`, and tree-shaking dropping a scene that is only referenced
 dynamically. A game that is perfect in dev and broken in build is the single most common
-launch-day failure.
+launch-day failure. Build mode is also where the Content-Security-Policy is active, so a
+blocked request shows up there as a console error — and fails the run.
+
+Security for a static game is short but non-negotiable: no secrets in `VITE_*`
+variables, no source maps, a CSP, pinned CI actions, and the server — never the client —
+as the authority for anything competitive. See
+`skills/phaser-build/references/production-hardening.md`.
 
 ### Manual checks the harness cannot make
 
