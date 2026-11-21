@@ -59,22 +59,28 @@ class GameScene extends Phaser.Scene {
 
 [Vitest](https://vitest.dev) works well for Phaser projects since it uses Vite (same as the game build).
 
+Projects created by `/phaser-new` already have Vitest wired up (`npm test`, tests in
+`tests/`, pure logic in `src/logic/`). For an older project:
+
 ### Install
 
 ```bash
 npm install -D vitest
 ```
 
-### `vite.config.ts` — add test config
+No config is needed for plain-logic tests: Vitest reuses `vite.config.ts` and runs in
+Node by default. Import `describe`/`it`/`expect` from `'vitest'` explicitly rather than
+enabling `globals`, which needs extra type configuration to pass `tsc`.
+
+If you do need test options, put them in the Vite config via Vitest's `defineConfig` —
+a `test` key under Vite's own `defineConfig` fails type-checking:
 
 ```typescript
-import { defineConfig } from 'vite';
+// vite.config.ts
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  test: {
-    environment: 'node',  // use 'jsdom' if you need DOM APIs
-    globals: true,
-  },
+  test: { environment: 'node' },   // 'happy-dom' / 'jsdom' only if a test truly needs the DOM
   // existing config...
 });
 ```
@@ -84,8 +90,6 @@ export default defineConfig({
 ```json
 {
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
     "test": "vitest run",
     "test:watch": "vitest"
   }

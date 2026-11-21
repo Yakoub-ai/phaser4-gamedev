@@ -15,8 +15,8 @@ GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-error() { echo -e "${RED}[ERROR]${NC} $1"; ((ERRORS++)); }
-warn()  { echo -e "${YELLOW}[WARN]${NC} $1";  ((WARNINGS++)); }
+error() { echo -e "${RED}[ERROR]${NC} $1"; ERRORS=$((ERRORS + 1)); }
+warn()  { echo -e "${YELLOW}[WARN]${NC} $1";  WARNINGS=$((WARNINGS + 1)); }
 ok()    { echo -e "${GREEN}[OK]${NC} $1"; }
 info()  { echo -e "${CYAN}[INFO]${NC} $1"; }
 
@@ -140,7 +140,7 @@ if [[ -d "$SRC_DIR" ]]; then
     warn "No src/main.ts or src/main.js found"
   fi
 
-  SCENE_COUNT=$(find "$SRC_DIR" -name "*.ts" -o -name "*.js" 2>/dev/null | xargs grep -l "extends Phaser.Scene" 2>/dev/null | wc -l)
+  SCENE_COUNT=$(find "$SRC_DIR" -name "*.ts" -o -name "*.js" 2>/dev/null | xargs grep -l "extends Phaser.Scene" 2>/dev/null | wc -l || true)
   if [[ "$SCENE_COUNT" -gt 0 ]]; then
     ok "$SCENE_COUNT scene file(s) found"
   else
@@ -153,13 +153,13 @@ if [[ -d "$SRC_DIR" ]]; then
     # Extract scene class names from all scene files
     UNREGISTERED=0
     while IFS= read -r scene_file; do
-      CLASS_NAME=$(grep -oE "class [A-Za-z]+ extends Phaser\.Scene" "$scene_file" 2>/dev/null | awk '{print $2}' | head -1)
+      CLASS_NAME=$(grep -oE "class [A-Za-z]+ extends Phaser\.Scene" "$scene_file" 2>/dev/null | awk '{print $2}' | head -1 || true)
       if [[ -n "$CLASS_NAME" ]]; then
         if grep -q "$CLASS_NAME" "$MAIN_FILE" 2>/dev/null; then
           ok "  Scene '$CLASS_NAME' registered in main file"
         else
           warn "  Scene '$CLASS_NAME' found in $scene_file but not referenced in $MAIN_FILE"
-          ((UNREGISTERED++))
+          UNREGISTERED=$((UNREGISTERED + 1))
         fi
       fi
     done < <(find "$SRC_DIR" \( -name "*.ts" -o -name "*.js" \) 2>/dev/null | xargs grep -l "extends Phaser.Scene" 2>/dev/null)
@@ -175,52 +175,52 @@ if [[ -d "$SRC_DIR" ]]; then
   info "Scanning for removed Phaser 3 APIs..."
 
   # Check Geom.Point usage
-  POINT_COUNT=$(grep -rn "Geom\.Point\|new Phaser\.Geom\.Point" "$SRC_DIR" 2>/dev/null | wc -l)
+  POINT_COUNT=$(grep -rn "Geom\.Point\|new Phaser\.Geom\.Point" "$SRC_DIR" 2>/dev/null | wc -l || true)
   if [[ "$POINT_COUNT" -gt 0 ]]; then
     error "Found $POINT_COUNT use(s) of Phaser.Geom.Point (removed in v4). Replace with Phaser.Math.Vector2"
-    grep -rn "Geom\.Point" "$SRC_DIR" 2>/dev/null | head -5
+    grep -rn "Geom\.Point" "$SRC_DIR" 2>/dev/null | head -5 || true
   else
     ok "No Geom.Point usage found"
   fi
 
   # Check Math.PI2
-  PI2_COUNT=$(grep -rn "Math\.PI2\b" "$SRC_DIR" 2>/dev/null | wc -l)
+  PI2_COUNT=$(grep -rn "Math\.PI2\b" "$SRC_DIR" 2>/dev/null | wc -l || true)
   if [[ "$PI2_COUNT" -gt 0 ]]; then
     error "Found $PI2_COUNT use(s) of Math.PI2 (removed in v4). Replace with Math.TAU"
-    grep -rn "Math\.PI2" "$SRC_DIR" 2>/dev/null | head -5
+    grep -rn "Math\.PI2" "$SRC_DIR" 2>/dev/null | head -5 || true
   else
     ok "No Math.PI2 usage found"
   fi
 
   # Check Structs
-  STRUCTS_COUNT=$(grep -rn "Phaser\.Structs\." "$SRC_DIR" 2>/dev/null | wc -l)
+  STRUCTS_COUNT=$(grep -rn "Phaser\.Structs\." "$SRC_DIR" 2>/dev/null | wc -l || true)
   if [[ "$STRUCTS_COUNT" -gt 0 ]]; then
     error "Found $STRUCTS_COUNT use(s) of Phaser.Structs (removed in v4). Use native Map/Set"
-    grep -rn "Phaser\.Structs\." "$SRC_DIR" 2>/dev/null | head -5
+    grep -rn "Phaser\.Structs\." "$SRC_DIR" 2>/dev/null | head -5 || true
   else
     ok "No Phaser.Structs usage found"
   fi
 
   # Check removed plugins
-  PLUGIN_COUNT=$(grep -rn "Camera3D\|Layer3D\|FacebookInstant\|SpinePlugin\|SpineFile" "$SRC_DIR" 2>/dev/null | wc -l)
+  PLUGIN_COUNT=$(grep -rn "Camera3D\|Layer3D\|FacebookInstant\|SpinePlugin\|SpineFile" "$SRC_DIR" 2>/dev/null | wc -l || true)
   if [[ "$PLUGIN_COUNT" -gt 0 ]]; then
     error "Found $PLUGIN_COUNT use(s) of removed plugins (Camera3D/Layer3D/Facebook/Spine)"
-    grep -rn "Camera3D\|Layer3D\|FacebookInstant\|SpinePlugin" "$SRC_DIR" 2>/dev/null | head -5
+    grep -rn "Camera3D\|Layer3D\|FacebookInstant\|SpinePlugin" "$SRC_DIR" 2>/dev/null | head -5 || true
   else
     ok "No removed plugin usage found"
   fi
 
   # Check DynamicTexture/RenderTexture for missing render()
-  DYN_TEX_COUNT=$(grep -rn "addDynamicTexture\|addRenderTexture" "$SRC_DIR" 2>/dev/null | wc -l)
+  DYN_TEX_COUNT=$(grep -rn "addDynamicTexture\|addRenderTexture" "$SRC_DIR" 2>/dev/null | wc -l || true)
   if [[ "$DYN_TEX_COUNT" -gt 0 ]]; then
     warn "Found $DYN_TEX_COUNT DynamicTexture/RenderTexture creation(s). Ensure .render() is called after drawing."
   fi
 
   # Check physics debug flag left on
-  DEBUG_COUNT=$(grep -rn "debug: true" "$SRC_DIR" 2>/dev/null | grep -i "arcade\|matter\|physics" | wc -l)
+  DEBUG_COUNT=$(grep -rn "debug: true" "$SRC_DIR" 2>/dev/null | grep -i "arcade\|matter\|physics" | wc -l || true)
   if [[ "$DEBUG_COUNT" -gt 0 ]]; then
     warn "Physics debug: true found in $DEBUG_COUNT place(s) — disable for production builds"
-    grep -rn "debug: true" "$SRC_DIR" 2>/dev/null | grep -i "arcade\|matter\|physics" | head -3
+    grep -rn "debug: true" "$SRC_DIR" 2>/dev/null | grep -i "arcade\|matter\|physics" | head -3 || true
   else
     ok "No physics debug mode left enabled"
   fi
@@ -239,6 +239,54 @@ if [[ -f "$PROJECT_DIR/vite.config.ts" ]] || [[ -f "$PROJECT_DIR/vite.config.js"
   fi
 else
   warn "No vite.config found. Create vite.config.ts for production builds"
+fi
+
+echo ""
+
+# ── 6b. Production hardening ─────────────────────────────────────────────────
+info "Checking production hardening..."
+
+VITE_CFG=""
+for f in vite.config.ts vite.config.mts vite.config.js vite.config.mjs; do
+  [[ -f "$PROJECT_DIR/$f" ]] && VITE_CFG="$PROJECT_DIR/$f" && break
+done
+
+if [[ -n "$VITE_CFG" ]]; then
+  if grep -qE "minify:\s*['\"]terser['\"]" "$VITE_CFG" && ! grep -q '"terser"' "$PROJECT_DIR/package.json" 2>/dev/null; then
+    error "vite config sets minify: 'terser' but terser is not installed — the build fails. Remove the line (Vite 8 minifies with Oxc)."
+  fi
+  if grep -qE "manualChunks:\s*\{" "$VITE_CFG"; then
+    warn "vite config uses the object form of manualChunks, which Vite 8 (Rolldown) no longer supports. Use build.rolldownOptions.output.codeSplitting.groups."
+  fi
+  if grep -qE "sourcemap:\s*true" "$VITE_CFG"; then
+    warn "build.sourcemap is true — the shipped build publishes your full source. Set it to false (or 'hidden' and keep the maps private)."
+  fi
+fi
+
+if grep -qs "Content-Security-Policy" "$PROJECT_DIR/index.html" ${VITE_CFG:+"$VITE_CFG"}; then
+  ok "Content-Security-Policy configured"
+else
+  warn "No Content-Security-Policy. Copy the build-only CSP plugin from the phaser-init template's vite.config.ts."
+fi
+
+# Every VITE_* variable is inlined into the public bundle. A secret there is published.
+SECRET_HITS=$(grep -rnoE "VITE_[A-Z0-9_]*(SECRET|TOKEN|PASSWORD|PRIVATE|API_KEY)[A-Z0-9_]*" "$SRC_DIR" "$PROJECT_DIR"/.env* 2>/dev/null | head -5 || true)
+if [[ -n "$SECRET_HITS" ]]; then
+  error "Secret-looking VITE_ variable(s) — anything prefixed VITE_ ships in the public bundle:"
+  echo "$SECRET_HITS" | sed 's/^/       /'
+else
+  ok "No secret-looking VITE_ variables"
+fi
+
+if ls "$PROJECT_DIR"/.env* >/dev/null 2>&1 && ! grep -qsE "^\.env" "$PROJECT_DIR/.gitignore"; then
+  warn ".env file(s) present but .env is not in .gitignore"
+fi
+
+if grep -rqs "__PHASER_GAME__" "$SRC_DIR"; then
+  ok "Playtest hook (__PHASER_GAME__) present"
+else
+  warn "No __PHASER_GAME__ hook — the playtest harness cannot make state assertions. Add next to new Phaser.Game(...):"
+  echo "       if (import.meta.env.DEV || import.meta.env.VITE_PLAYTEST === 'true') (window as any).__PHASER_GAME__ = game;"
 fi
 
 echo ""
@@ -267,7 +315,7 @@ if [[ -d "$PROJECT_DIR/public" ]]; then
     base="${mp3file%.mp3}"
     if [[ ! -f "${base}.ogg" ]]; then
       warn "Missing .ogg fallback for: $mp3file"
-      ((MISSING_FALLBACKS++))
+      MISSING_FALLBACKS=$((MISSING_FALLBACKS + 1))
     fi
   done < <(find "$PROJECT_DIR/public" -name "*.mp3" 2>/dev/null)
 
@@ -275,12 +323,12 @@ if [[ -d "$PROJECT_DIR/public" ]]; then
     base="${oggfile%.ogg}"
     if [[ ! -f "${base}.mp3" ]]; then
       warn "Missing .mp3 fallback for: $oggfile"
-      ((MISSING_FALLBACKS++))
+      MISSING_FALLBACKS=$((MISSING_FALLBACKS + 1))
     fi
   done < <(find "$PROJECT_DIR/public" -name "*.ogg" 2>/dev/null)
 
   if [[ "$MISSING_FALLBACKS" -eq 0 ]]; then
-    MP3_COUNT=$(find "$PROJECT_DIR/public" -name "*.mp3" 2>/dev/null | wc -l)
+    MP3_COUNT=$(find "$PROJECT_DIR/public" -name "*.mp3" 2>/dev/null | wc -l || true)
     if [[ "$MP3_COUNT" -gt 0 ]]; then
       ok "All audio files have both .mp3 and .ogg versions"
     fi
@@ -296,11 +344,11 @@ if [[ -d "$SRC_DIR" ]]; then
   info "Checking for debug artifacts..."
 
   # Count console.log/warn/error calls (excluding comments)
-  CONSOLE_LOG_COUNT=$(grep -rn "console\.\(log\|warn\|error\)" "$SRC_DIR" --include="*.ts" --include="*.js" 2>/dev/null | grep -v "^\s*//" | grep -v "import\.meta\.env\.DEV" | wc -l)
+  CONSOLE_LOG_COUNT=$(grep -rn "console\.\(log\|warn\|error\)" "$SRC_DIR" --include="*.ts" --include="*.js" 2>/dev/null | grep -v "^\s*//" | grep -v "import\.meta\.env\.DEV" | wc -l || true)
   if [[ "$CONSOLE_LOG_COUNT" -gt 5 ]]; then
     warn "Found $CONSOLE_LOG_COUNT console.log/warn/error calls. Gate behind import.meta.env.DEV for production:"
     echo "       if (import.meta.env.DEV) console.log(...);"
-    grep -rn "console\.\(log\|warn\|error\)" "$SRC_DIR" --include="*.ts" --include="*.js" 2>/dev/null | grep -v "^\s*//" | grep -v "import\.meta\.env\.DEV" | head -5
+    grep -rn "console\.\(log\|warn\|error\)" "$SRC_DIR" --include="*.ts" --include="*.js" 2>/dev/null | grep -v "^\s*//" | grep -v "import\.meta\.env\.DEV" | head -5 || true
   elif [[ "$CONSOLE_LOG_COUNT" -gt 0 ]]; then
     ok "Only $CONSOLE_LOG_COUNT console statement(s) found (acceptable)"
   else
@@ -316,19 +364,21 @@ if [[ -d "$SRC_DIR" ]]; then
 
   LISTENER_ISSUES=0
   while IFS= read -r scene_file; do
-    CLASS_NAME=$(grep -oE "class [A-Za-z]+ extends Phaser\.Scene" "$scene_file" 2>/dev/null | awk '{print $2}' | head -1)
+    CLASS_NAME=$(grep -oE "class [A-Za-z]+ extends Phaser\.Scene" "$scene_file" 2>/dev/null | awk '{print $2}' | head -1 || true)
     if [[ -z "$CLASS_NAME" ]]; then
       continue
     fi
 
-    # Check if this scene adds event listeners
-    HAS_LISTENERS=$(grep -c "events\.on\|events\.addListener\|this\.input\.on" "$scene_file" 2>/dev/null || true)
+    # Listeners that outlive a scene restart. this.input.* listeners are removed by the
+    # InputPlugin on shutdown, and once() removes itself, so neither is counted. Scene
+    # events, game events, registry events and the scale manager are not cleared.
+    HAS_LISTENERS=$(grep -cE "(events|scale)\.(on|addListener)\(" "$scene_file" 2>/dev/null || true)
     if [[ "$HAS_LISTENERS" -gt 0 ]]; then
       # Check if it also cleans them up
       HAS_CLEANUP=$(grep -c "events\.off\|events\.removeListener\|SHUTDOWN\|shutdown" "$scene_file" 2>/dev/null || true)
       if [[ "$HAS_CLEANUP" -eq 0 ]]; then
         warn "Scene '$CLASS_NAME' has $HAS_LISTENERS event listener(s) but no cleanup (events.off / SHUTDOWN handler)"
-        ((LISTENER_ISSUES++))
+        LISTENER_ISSUES=$((LISTENER_ISSUES + 1))
       else
         ok "  Scene '$CLASS_NAME' has listeners with cleanup"
       fi
@@ -347,10 +397,10 @@ if [[ -d "$SRC_DIR" ]]; then
   info "Checking asset key consistency..."
 
   # Extract all this.load.* keys from preload methods (first string argument)
-  LOADED_KEYS=$(grep -rhoE "this\.load\.(image|spritesheet|atlas|audio|bitmapFont|json|tilemapTiledJSON|svg|video|text|xml|html)\(['\"]([^'\"]+)['\"]" "$SRC_DIR" --include="*.ts" --include="*.js" 2>/dev/null | grep -oE "\(['\"][^'\"]+['\"]" | tr -d "()'\"" | sort -u)
+  LOADED_KEYS=$(grep -rhoE "this\.load\.(image|spritesheet|atlas|audio|bitmapFont|json|tilemapTiledJSON|svg|video|text|xml|html)\(['\"]([^'\"]+)['\"]" "$SRC_DIR" --include="*.ts" --include="*.js" 2>/dev/null | grep -oE "\(['\"][^'\"]+['\"]" | tr -d "()'\"" | sort -u || true)
 
   # Extract asset key references from create/update (this.add.image, this.add.sprite, this.sound.add, this.make, textures.get, etc.)
-  USED_KEYS=$(grep -rhoE "(this\.(add\.(image|sprite|tileSprite|existing)|sound\.(add|play)|make\.|textures\.get|anims\.create|physics\.add\.(image|sprite|existing))|\.play\(|\.setTexture\(|\.setFrame\()\s*\(?['\"]([^'\"]+)['\"]" "$SRC_DIR" --include="*.ts" --include="*.js" 2>/dev/null | grep -oE "['\"][^'\"]+['\"]" | tr -d "'\"" | sort -u)
+  USED_KEYS=$(grep -rhoE "(this\.(add\.(image|sprite|tileSprite|existing)|sound\.(add|play)|make\.|textures\.get|anims\.create|physics\.add\.(image|sprite|existing))|\.play\(|\.setTexture\(|\.setFrame\()\s*\(?['\"]([^'\"]+)['\"]" "$SRC_DIR" --include="*.ts" --include="*.js" 2>/dev/null | grep -oE "['\"][^'\"]+['\"]" | tr -d "'\"" | sort -u || true)
 
   if [[ -n "$LOADED_KEYS" && -n "$USED_KEYS" ]]; then
     # Keys used but never loaded
@@ -358,7 +408,7 @@ if [[ -d "$SRC_DIR" ]]; then
     while IFS= read -r key; do
       if [[ -n "$key" ]] && ! echo "$LOADED_KEYS" | grep -qxF "$key"; then
         warn "Asset key '$key' is used but never loaded (potential 404 at runtime)"
-        ((MISSING_LOAD++))
+        MISSING_LOAD=$((MISSING_LOAD + 1))
       fi
     done <<< "$USED_KEYS"
 
@@ -367,7 +417,7 @@ if [[ -d "$SRC_DIR" ]]; then
     while IFS= read -r key; do
       if [[ -n "$key" ]] && ! echo "$USED_KEYS" | grep -qxF "$key"; then
         warn "Asset key '$key' is loaded but never used (wasted bandwidth)"
-        ((UNUSED_LOAD++))
+        UNUSED_LOAD=$((UNUSED_LOAD + 1))
       fi
     done <<< "$LOADED_KEYS"
 
@@ -386,19 +436,19 @@ if [[ -d "$SRC_DIR" ]]; then
   info "Checking TypeScript strictness..."
 
   # Count 'as any' casts
-  AS_ANY_COUNT=$(grep -rn "as any" "$SRC_DIR" --include="*.ts" 2>/dev/null | wc -l)
+  AS_ANY_COUNT=$(grep -rn "as any" "$SRC_DIR" --include="*.ts" 2>/dev/null | wc -l || true)
   # Count @ts-ignore and @ts-expect-error comments
-  TS_IGNORE_COUNT=$(grep -rn "@ts-ignore\|@ts-expect-error" "$SRC_DIR" --include="*.ts" 2>/dev/null | wc -l)
+  TS_IGNORE_COUNT=$(grep -rn "@ts-ignore\|@ts-expect-error" "$SRC_DIR" --include="*.ts" 2>/dev/null | wc -l || true)
 
   TOTAL_STRICT_ISSUES=$((AS_ANY_COUNT + TS_IGNORE_COUNT))
 
   if [[ "$TOTAL_STRICT_ISSUES" -gt 5 ]]; then
     warn "Found $AS_ANY_COUNT 'as any' cast(s) and $TS_IGNORE_COUNT @ts-ignore/@ts-expect-error comment(s). Consider adding proper types"
     if [[ "$AS_ANY_COUNT" -gt 0 ]]; then
-      grep -rn "as any" "$SRC_DIR" --include="*.ts" 2>/dev/null | head -3
+      grep -rn "as any" "$SRC_DIR" --include="*.ts" 2>/dev/null | head -3 || true
     fi
     if [[ "$TS_IGNORE_COUNT" -gt 0 ]]; then
-      grep -rn "@ts-ignore\|@ts-expect-error" "$SRC_DIR" --include="*.ts" 2>/dev/null | head -3
+      grep -rn "@ts-ignore\|@ts-expect-error" "$SRC_DIR" --include="*.ts" 2>/dev/null | head -3 || true
     fi
   elif [[ "$TOTAL_STRICT_ISSUES" -gt 0 ]]; then
     ok "Only $TOTAL_STRICT_ISSUES type escape(s) found ($AS_ANY_COUNT 'as any', $TS_IGNORE_COUNT @ts-ignore) — acceptable"
@@ -420,4 +470,4 @@ else
 fi
 echo ""
 
-exit "$ERRORS"
+exit $(( ERRORS > 0 ? 1 : 0 ))

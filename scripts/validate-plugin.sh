@@ -264,6 +264,53 @@ while IFS= read -r script; do
 done < <(find "$PLUGIN_DIR/skills" "$PLUGIN_DIR/scripts" -type f \( -name "*.sh" -o -name "*.mjs" -o -name "*.js" \) 2>/dev/null | sort)
 echo ""
 
+# ── Scaffold ──────────────────────────────────────────────────────────────────
+# /phaser-new depends on this producing a correct project. Run it for real (without
+# npm install, so this stays offline and fast) and check what it wrote.
+info "Scaffold..."
+SCAFFOLD="$PLUGIN_DIR/skills/phaser-init/scripts/scaffold.mjs"
+TEMPLATE_DIR="$PLUGIN_DIR/skills/phaser-init/template"
+if [[ -f "$SCAFFOLD" && -d "$TEMPLATE_DIR" ]]; then
+  SC_TMP=$(mktemp -d)
+  if node "$SCAFFOLD" "$SC_TMP/game" --title "Validator's <Test>" --no-install >/dev/null 2>&1; then
+    ok "scaffold.mjs creates a project"
+    for f in package.json tsconfig.json vite.config.ts index.html .gitignore src/main.ts \
+             src/scenes/GameScene.ts tests/score.test.ts playtest/smoke.mjs tools/playtest.mjs \
+             .github/workflows/ci.yml .github/workflows/deploy-pages.yml; do
+      [[ -f "$SC_TMP/game/$f" ]] || error "scaffold did not write $f"
+    done
+    LEFT=$(grep -rlE '\{\{[A-Z_]+\}\}' "$SC_TMP/game" 2>/dev/null || true)
+    [[ -z "$LEFT" ]] && ok "no unresolved template placeholders" || error "unresolved placeholders in: ${LEFT//$SC_TMP\/game\//}"
+    cmp -s "$SC_TMP/game/tools/playtest.mjs" "$PLUGIN_DIR/skills/phaser-playtest/scripts/playtest.mjs" \
+      && ok "vendored tools/playtest.mjs matches the harness" || error "vendored tools/playtest.mjs differs from the harness"
+    if node "$SCAFFOLD" "$SC_TMP/game" --no-install >/dev/null 2>&1; then
+      error "scaffold.mjs overwrote an existing project instead of refusing"
+    else
+      ok "scaffold.mjs refuses to overwrite existing files"
+    fi
+  else
+    error "scaffold.mjs failed: $(node "$SCAFFOLD" "$SC_TMP/game2" --no-install 2>&1 | tail -1)"
+  fi
+  rm -rf "$SC_TMP"
+
+  # Pinned to a stable Phaser 4 release, never a pre-release tag.
+  PHASER_RANGE=$(node -pe "require('$TEMPLATE_DIR/package.json').dependencies.phaser" 2>/dev/null || echo "")
+  if [[ "$PHASER_RANGE" =~ ^\^?4\.[0-9]+\.[0-9]+$ ]]; then ok "template pins phaser $PHASER_RANGE"; else error "template phaser range '$PHASER_RANGE' is not a stable 4.x release"; fi
+
+  # The test hook must survive the harness's build mode, or build-mode scenarios go blind.
+  grep -q "VITE_PLAYTEST === 'true'" "$TEMPLATE_DIR/src/main.ts" \
+    && ok "template exposes __PHASER_GAME__ to playtest builds" || error "template main.ts does not gate __PHASER_GAME__ on VITE_PLAYTEST"
+  grep -q "Content-Security-Policy" "$TEMPLATE_DIR/vite.config.ts" \
+    && ok "template injects a Content-Security-Policy" || error "template vite.config.ts has no Content-Security-Policy"
+
+  # Supply chain: every action pinned to a full commit SHA.
+  UNPINNED=$(grep -rhE '^\s*(-\s*)?uses:' "$TEMPLATE_DIR/.github/workflows" 2>/dev/null | grep -vE '@[0-9a-f]{40}( |$)' || true)
+  [[ -z "$UNPINNED" ]] && ok "template workflow actions are pinned to commit SHAs" || error "unpinned actions in template workflows:$(printf '\n        %s' $UNPINNED)"
+else
+  error "skills/phaser-init/scripts/scaffold.mjs or template/ is missing"
+fi
+echo ""
+
 # ── Cross-references ──────────────────────────────────────────────────────────
 info "Cross-references..."
 # Every ${CLAUDE_PLUGIN_ROOT}/... path named in a command or agent must exist,
@@ -321,7 +368,7 @@ check_mentions "filters\.internal" "The Filters system (v4 replacement for FX an
 # or is structurally an audit/conversion artifact:
 #   - a `grep -rn '...'` line is a migration audit command, listing what to search FOR
 #   - a markdown table row `| old API | new API |` is a conversion table
-NEGATION='removed|no longer|not exist|does not|do not|don.t|never|instead|replaced|was |were |v3|phaser 3|gone|deprecated|not a method|not methods|\bno\b|not\b|avoid|stale|older than|neither|nor '
+NEGATION='remove|rather than|removed|no longer|not exist|does not|do not|don.t|never|instead|replaced|was |were |v3|phaser 3|gone|deprecated|not a method|not methods|\bno\b|not\b|avoid|stale|older than|neither|nor '
 guard_not_recommended() {
   local needle="$1" label="$2" hits
   hits=$(grep -rInI -- "$needle" \
@@ -346,6 +393,14 @@ guard_not_recommended 'types": \["Phaser"\]' "the v3 typeRoots/types:[\"Phaser\"
 guard_not_recommended "setScissor" "camera.setScissor() is not recommended (no such method in v4)"
 guard_not_recommended "createBitmapMask\|createGeometryMask" "createBitmapMask/createGeometryMask are not recommended (removed in v4)"
 guard_not_recommended "tintFill" "tintFill is not recommended (use setTintMode in v4)"
+guard_not_recommended '"phaser": "beta"' "no package.json example pins phaser to the beta tag"
+# Vite 8 (Rolldown/Oxc): terser is not bundled, and manualChunks lost its object form.
+guard_not_recommended "minify: 'terser'" "minify: 'terser' is not recommended (Vite 8 build fails without terser)"
+guard_not_recommended "manualChunks: {" "the manualChunks object form is not recommended (unsupported in Vite 8)"
+# A DEV-only hook disappears in the harness's build mode, blinding every build-mode scenario.
+guard_not_recommended "import.meta.env.DEV) (window as any).__PHASER_GAME__" "the __PHASER_GAME__ hook is never taught as DEV-only (it must include VITE_PLAYTEST)"
+guard_not_recommended "still in release candidate" "Phaser 4 is not described as a release candidate (stable since 4.0.0)"
+guard_not_recommended "peaceiris/actions-gh-pages" "GitHub Pages deploys use the official Pages actions"
 
 # Every `skills/<name>/<sub>/<file>` path cited in prose must resolve. These
 # cross-skill pointers are how a skill hands off to deeper reference material;
@@ -353,9 +408,26 @@ guard_not_recommended "tintFill" "tintFill is not recommended (use setTintMode i
 DEADLINKS=0
 while IFS= read -r ref; do
   [[ -e "$PLUGIN_DIR/$ref" ]] || { error "broken cross-reference: $ref"; DEADLINKS=$((DEADLINKS + 1)); }
-done < <(grep -rhoE 'skills/[a-z0-9-]+/(references|examples|scripts)/[A-Za-z0-9_.-]+' \
+done < <(grep -rhoE 'skills/[a-z0-9-]+/(references|examples|scripts|template)/[A-Za-z0-9_.-]+' \
            "$PLUGIN_DIR/skills" "$PLUGIN_DIR/agents" "$PLUGIN_DIR/commands" "$PLUGIN_DIR/CLAUDE.md" 2>/dev/null | sort -u)
 [[ "$DEADLINKS" -eq 0 ]] && ok "all cross-skill file references resolve"
+echo ""
+
+# ── Advertised counts ─────────────────────────────────────────────────────────
+# Manifest descriptions quote "N skills, N commands, N agents"; they drifted before.
+info "Advertised counts..."
+COUNTS_OK=1
+for manifest in .claude-plugin/plugin.json .claude-plugin/marketplace.json README.md; do
+  text=$(cat "$PLUGIN_DIR/$manifest")
+  for pair in "skills:$SKILL_COUNT" "commands:$CMD_COUNT" "agents:$AGENT_COUNT"; do
+    noun="${pair%%:*}"; want="${pair##*:}"
+    while IFS= read -r got; do
+      [[ -z "$got" ]] && continue
+      [[ "$got" == "$want" ]] || { error "$manifest says $got $noun, disk has $want"; COUNTS_OK=0; }
+    done < <(grep -oiE "\b[0-9]+ (portable |claude (code )?|claude slash )?(\*\*)?$noun\b" <<< "$text" | grep -oE '^[0-9]+' | sort -u)
+  done
+done
+[[ "$COUNTS_OK" -eq 1 ]] && ok "advertised skill/command/agent counts match disk"
 echo ""
 
 # ── Summary ───────────────────────────────────────────────────────────────────

@@ -1,0 +1,28 @@
+{
+  "name": "{{NAME}}",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "playtest": "node tools/playtest.mjs --project . --scenario playtest",
+    "playtest:build": "node tools/playtest.mjs --project . --mode build --scenario playtest",
+    "verify": "npm run typecheck && npm test && npm run playtest:build"
+  },
+  "dependencies": {
+    "phaser": "^4.2.1"
+  },
+  "devDependencies": {
+    "playwright": "^1.65.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
+  },
+  "engines": {
+    "node": ">=20.19"
+  }
+}

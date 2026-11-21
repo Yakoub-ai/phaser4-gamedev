@@ -70,8 +70,10 @@ Exit `2` is **not** a game failure. Fix the harness invocation before reading re
 - minification breaking code that relies on function or class `.name`
 - tree-shaking dropping a scene that is only referenced dynamically
 
-Run `--mode build` before every deploy. Dev-only globals are absent by design, so
-deep state checks downgrade to a warning.
+Run `--mode build` before every deploy. The harness builds with `VITE_PLAYTEST=true`,
+so a game gated on `import.meta.env.DEV || import.meta.env.VITE_PLAYTEST === 'true'`
+keeps its `__PHASER_GAME__` hook and scenarios run against the minified bundle. Rebuild
+with a plain `npm run build` before shipping that `dist/`.
 
 ---
 

@@ -14,7 +14,8 @@
  *   --url URL          Test an already-running server instead of starting one
  *   --mode dev|build   dev = `npm run dev`; build = `npm run build` + `npm run preview`
  *                      (default: dev). build mode catches base-path and bundling bugs.
- *   --scenario FILE    .mjs module default-exporting an array of steps
+ *   --scenario PATH    .mjs module default-exporting an array of steps, or a directory
+ *                      of them — each runs from a fresh page load (regression suite)
  *   --out DIR          Artifact directory (default: <project>/.playtest)
  *   --settle MS        Wait after load before probing (default: 3000)
  *   --timeout MS       Server startup timeout (default: 90000)
@@ -166,10 +167,10 @@ function portOpen(port, host = '127.0.0.1') {
 
 const URL_RE = /(https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\]):(\d+)\/?[^\s\x1b]*)/i;
 
-async function runOnce(cmd, args, cwd, label) {
+async function runOnce(cmd, args, cwd, label, env = process.env) {
   log(`${C.dim}$ ${cmd} ${args.join(' ')}${C.off}`);
   return new Promise((resolve, reject) => {
-    const p = spawn(cmd, args, { cwd, stdio: ['ignore', 'pipe', 'pipe'], shell: process.platform === 'win32' });
+    const p = spawn(cmd, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'], shell: process.platform === 'win32' });
     let out = '';
     p.stdout.on('data', (d) => { out += d; });
     p.stderr.on('data', (d) => { out += d; });
@@ -183,8 +184,12 @@ async function startServer(opts) {
   const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
   if (opts.mode === 'build') {
-    await runOnce(npm, ['run', 'build'], opts.project, 'npm run build');
-    record('production build', 'pass', 'npm run build succeeded');
+    // VITE_PLAYTEST lets a production bundle keep its `__PHASER_GAME__` hook (gated on
+    // `import.meta.env.DEV || import.meta.env.VITE_PLAYTEST === 'true'`), so scenarios
+    // can assert on state against the real minified build. It also means this dist/
+    // is a test build: rebuild with a plain `npm run build` before shipping it.
+    await runOnce(npm, ['run', 'build'], opts.project, 'npm run build', { ...process.env, VITE_PLAYTEST: 'true' });
+    record('production build', 'pass', 'npm run build succeeded (VITE_PLAYTEST=true — rebuild before shipping dist/)');
   }
 
   log(`${C.dim}$ npm run ${script}${C.off}`);
@@ -773,7 +778,7 @@ async function main() {
       }
     } else {
       record('Phaser game instance found', 'warn',
-        'not exposed on window — deep checks skipped. Add `if (import.meta.env.DEV) (window as any).__PHASER_GAME__ = game;` ' +
+        'not exposed on window — deep checks skipped. Add `if (import.meta.env.DEV || import.meta.env.VITE_PLAYTEST === \'true\') (window as any).__PHASER_GAME__ = game;` ' +
         'next to `new Phaser.Game(config)`. See references/instrumenting-games.md');
     }
 
@@ -800,11 +805,36 @@ async function main() {
                            : `${(heapBefore / 1048576).toFixed(1)} MB after boot`);
     }
 
-    if (opts.scenario) {
-      const file = path.resolve(opts.scenario);
-      const mod = await import(pathToFileURL(file).href);
-      const steps = mod.default;
-      if (!Array.isArray(steps)) throw new Error(`${file} must default-export an array of steps`);
+    // A fresh page load between scenario runs, so one scenario's state never leaks
+    // into the next. Storage is cleared too: a saved best score or settings toggle from
+    // an earlier scenario would otherwise change what a later one observes.
+    const freshLoad = async () => {
+      await page.evaluate(() => { try { localStorage.clear(); sessionStorage.clear(); } catch { /* sandboxed */ } });
+      await page.reload({ waitUntil: 'load', timeout: 60000 });
+      try { await page.waitForSelector('canvas', { timeout: 15000, state: 'attached' }); } catch { /* reported below */ }
+      canvas = await page.$('canvas');
+      if (canvas) { try { await canvas.click({ position: { x: 5, y: 5 } }); } catch { /* non-fatal */ } }
+      await page.waitForTimeout(opts.settle);
+      await page.evaluate(FIND_GAME);
+    };
+
+    const scenarioFiles = opts.scenario ? listScenarios(path.resolve(opts.scenario)) : [];
+    if (scenarioFiles.length > 1 && opts.repeat > 1) {
+      throw new Error('--repeat needs a single scenario file, not a directory');
+    }
+
+    if (scenarioFiles.length > 1) {
+      // Regression suite: every scenario in the directory, one server and one browser,
+      // a fresh page per file. This is what keeps old bugs fixed.
+      for (const [i, file] of scenarioFiles.entries()) {
+        const steps = await loadScenario(file);
+        if (i > 0) await freshLoad();
+        log(`\n${C.cyan}--- scenario: ${path.basename(file)} (${steps.length} steps) ---${C.off}`);
+        await runScenario(page, canvas, steps, path.join(opts.out, path.basename(file, '.mjs')), opts.slowmo);
+      }
+    } else if (scenarioFiles.length === 1) {
+      const file = scenarioFiles[0];
+      const steps = await loadScenario(file);
 
       if (opts.repeat === 1) {
         log(`\n${C.cyan}--- scenario: ${path.basename(file)} (${steps.length} steps) ---${C.off}`);
@@ -816,14 +846,7 @@ async function main() {
         log(`\n${C.cyan}--- scenario: ${path.basename(file)} × ${opts.repeat} runs ---${C.off}`);
         const runs = [];
         for (let r = 1; r <= opts.repeat; r++) {
-          if (r > 1) {
-            await page.reload({ waitUntil: 'load', timeout: 60000 });
-            try { await page.waitForSelector('canvas', { timeout: 15000, state: 'attached' }); } catch { /* reported below */ }
-            canvas = await page.$('canvas');
-            if (canvas) { try { await canvas.click({ position: { x: 5, y: 5 } }); } catch { /* non-fatal */ } }
-            await page.waitForTimeout(opts.settle);
-            await page.evaluate(FIND_GAME);
-          }
+          if (r > 1) await freshLoad();
           const buffer = [];
           CAPTURE = buffer;
           let failures = 0;
@@ -935,6 +958,20 @@ async function main() {
   }
 
   process.exit(failed.length ? 1 : 0);
+}
+
+function listScenarios(target) {
+  if (!fs.existsSync(target)) throw new Error(`--scenario path does not exist: ${target}`);
+  if (!fs.statSync(target).isDirectory()) return [target];
+  const files = fs.readdirSync(target).filter((f) => f.endsWith('.mjs')).sort().map((f) => path.join(target, f));
+  if (!files.length) throw new Error(`no .mjs scenarios in ${target}`);
+  return files;
+}
+
+async function loadScenario(file) {
+  const steps = (await import(pathToFileURL(file).href)).default;
+  if (!Array.isArray(steps)) throw new Error(`${file} must default-export an array of steps`);
+  return steps;
 }
 
 main().catch((err) => {

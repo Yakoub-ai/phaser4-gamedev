@@ -9,7 +9,7 @@ If an argument was provided ($ARGUMENTS), treat it as the desired game genre. If
 
 ## Process
 
-1. **Determine genre** — from $ARGUMENTS or by asking the user. Supported genres: `platformer`, `topdown`, `shooter`, `puzzle`, `towerdefense`, `runner`, `cardgame`, `fighting`, `racing`, or `custom`. For `custom`, ask the user to describe the genre in their own words.
+1. **Determine genre** — from $ARGUMENTS or by asking the user. Named genres get tailored defaults: `platformer`, `topdown`, `shooter`, `puzzle`, `towerdefense`, `runner`, `cardgame`, `fighting`, `racing`. Anything else — a hybrid, a narrative game, a sim, an idle game, a physics toy — is `custom`: ask the user to describe it in their own words and design from that rather than forcing the nearest genre.
 
 2. **Gather requirements** — Ask the user 3-5 focused questions to fill in the most impactful design decisions before generating. Tailor questions to the genre, but always cover:
    - **Target platform** — Desktop browser, mobile, or both?
@@ -26,6 +26,6 @@ If an argument was provided ($ARGUMENTS), treat it as the desired game genre. If
 
 5. **Suggest next steps** — After generating the GDD, recommend:
    - Review and revise any `<!-- ASSUMPTION -->` markers.
-   - Run `/phaser-new [genre]` to scaffold the project based on the GDD.
-   - Use the **phaser-architect** agent to design the technical architecture from the GDD.
-   - Use the **phaser-coder** agent to start implementing mechanics described in the GDD.
+   - Run `/phaser-new custom` to scaffold a verified project configured from the GDD (or `/phaser-new <archetype>` if the game is a close fit for one).
+   - The **phaser-architect** agent then writes `docs/ARCHITECTURE.md` — phases with observable exit conditions taken from Section 13.
+   - Run `/phaser-dev` to build and verify one phase at a time.

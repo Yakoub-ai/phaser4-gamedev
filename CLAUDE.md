@@ -6,8 +6,8 @@
 agents/          — 5 specialized subagent definitions (Markdown with YAML frontmatter)
                    phaser-architect, phaser-coder, phaser-debugger,
                    phaser-asset-advisor, phaser-playtester
-commands/        — Slash command definitions (10 commands)
-                   phaser-brainstorm, phaser-gdd, phaser-new, phaser-run,
+commands/        — Slash command definitions (11 commands)
+                   phaser-brainstorm, phaser-gdd, phaser-new, phaser-dev, phaser-run,
                    phaser-playtest, phaser-validate, phaser-build, phaser-analyze,
                    phaser-release, phaser-feedback
 skills/          — Each skill has SKILL.md + references/ + optional examples/ and scripts/
@@ -32,8 +32,8 @@ scripts/         — Validation and utility scripts
 ## The Workflow This Plugin Encodes
 
 ```
-/phaser-brainstorm ──► /phaser-gdd ──► /phaser-new ──► phaser-coder
-     shape & scope         plan          scaffold        implement
+/phaser-brainstorm ──► /phaser-gdd ──► /phaser-new ──► /phaser-dev
+     shape & scope         plan          scaffold       phase by phase
                              │                               │
                              │                               ▼
                              │                       /phaser-playtest ──► /phaser-release
@@ -98,7 +98,7 @@ Rules:
 - **Never report a feature complete without having run the game.** If you did not run
   it, say so explicitly rather than implying it works.
 - A green `tsc` plus a failing playtest means the work is **not** done.
-- Every scaffolded project gets `if (import.meta.env.DEV) (window as any).__PHASER_GAME__ = game;`
+- Every scaffolded project gets `if (import.meta.env.DEV || import.meta.env.VITE_PLAYTEST === 'true') (window as any).__PHASER_GAME__ = game;`
   next to `new Phaser.Game(config)`. Dev-only, one line, and it unlocks every state assertion.
   It requires `"types": ["vite/client"]` in tsconfig — without it the line fails `tsc --noEmit`.
 - Before any deploy, run `--mode build`. That is where base-path and bundling failures appear.

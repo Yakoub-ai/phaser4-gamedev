@@ -80,7 +80,7 @@ check depends on it:
 
 ```typescript
 const game = new Phaser.Game(config);
-if (import.meta.env.DEV) (window as any).__PHASER_GAME__ = game;
+if (import.meta.env.DEV || import.meta.env.VITE_PLAYTEST === 'true') (window as any).__PHASER_GAME__ = game;
 ```
 
 > **`import.meta.env` needs Vite's client types.** Add `"types": ["vite/client"]` to

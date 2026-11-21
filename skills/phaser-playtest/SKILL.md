@@ -1,7 +1,7 @@
 ---
 name: phaser-playtest
 description: This skill should be used when the user asks to "playtest my game", "test my Phaser game", "does my game actually run", "check the game in a browser", "verify the game works", "smoke test the game", "automate game testing", "catch black screens", "check for asset 404s", "measure FPS", "screenshot the game", "write a playtest scenario", or whenever Phaser 4 code has been written or changed and needs runtime verification before being handed back to the user.
-version: 0.7.0
+version: 0.8.0
 ---
 
 # Phaser 4 Playtesting (Runtime Verification)
@@ -70,11 +70,11 @@ Exit code `0` = pass, `1` = check failures, `2` = harness error. Writes
 ## Make the Game Testable (one line)
 
 The deep checks need the game instance. Bundled games keep it in module scope, so
-expose it in dev builds only:
+expose it in dev and playtest builds only:
 
 ```typescript
 const game = new Phaser.Game(config);
-if (import.meta.env.DEV) (window as any).__PHASER_GAME__ = game;
+if (import.meta.env.DEV || import.meta.env.VITE_PLAYTEST === 'true') (window as any).__PHASER_GAME__ = game;
 export default game;
 ```
 

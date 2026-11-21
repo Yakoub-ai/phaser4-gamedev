@@ -1,7 +1,7 @@
 {
   "name": "phaser4-gamedev",
-  "version": "0.7.0",
-  "description": "Comprehensive Phaser 4 game development toolkit \u2014 21 skills, 7 commands, 5 agents, 9 archetypes. Plan with GDDs and architecture, build scenes/physics/UI, then verify the game actually runs with the headless playtest harness.",
+  "version": "0.8.0",
+  "description": "Phaser 4 game development toolkit — 26 skills, 11 commands, 5 agents, 9 archetypes. Brainstorm and plan with GDDs, scaffold a verified project, build any game phase by phase with playtests as the contract, and ship a hardened production build.",
   "homepage": "https://github.com/Yakoub-ai/phaser4-gamedev",
   "repository": "https://github.com/Yakoub-ai/phaser4-gamedev",
   "author": {
